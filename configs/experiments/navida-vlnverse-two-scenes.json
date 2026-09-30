@@ -1,0 +1,12 @@
+{
+  "schema_version": "nav-eval-experiment/1",
+  "benchmark": "vlnverse", "simulator": "isaacsim500", "method": "navida",
+  "track": "standardized", "launcher": "python", "transport": "binary",
+  "benchmark_settings": {
+    "benchmark_id": "vlnverse_fine_val_unseen",
+    "max_control_steps": 20,
+    "max_task_steps": 25000
+  },
+  "episodes": ["kujiale_0020_0_0", "kujiale_0030_0_0"],
+  "seed": 0, "claim": "diagnostic"
+}

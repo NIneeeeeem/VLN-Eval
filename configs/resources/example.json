@@ -1,0 +1,12 @@
+{
+  "method": {
+    "python": "envs/navida/bin/python", "gpu": 0,
+    "min_free_memory_mib": 12000, "timeout_s": 900,
+    "settings": {"checkpoint": "weights/navida", "repo_path": "source/NAVIDA"}
+  },
+  "environment": {
+    "python": "envs/habitat030/bin/python", "gpu": 1,
+    "min_free_memory_mib": 4000, "timeout_s": 900,
+    "settings": {"data_root": "data"}
+  }
+}

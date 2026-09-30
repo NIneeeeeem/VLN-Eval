@@ -1,0 +1,11 @@
+{
+  "schema_version": "nav-eval-experiment/1",
+  "benchmark": "r2r_ce", "simulator": "habitat024", "method": "streamvln",
+  "track": "native", "launcher": "python", "transport": "binary",
+  "benchmark_settings": {"benchmark_id": "r2r_val_unseen"},
+  "method_settings": {"preprocess_mode": "lazy", "tokenizer_mode": "reuse"},
+  "episodes": ["10", "16", "43", "220", "289", "349", "127", "196", "202",
+               "19", "49", "67", "4", "22", "34", "46", "112", "118", "205", "322", "343",
+               "28", "64", "109", "412", "649", "1483", "7", "31", "100", "1", "13", "25"],
+  "seed": 0, "claim": "diagnostic"
+}

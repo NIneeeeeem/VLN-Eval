@@ -1,0 +1,32 @@
+{
+  "schema_version": "nav-eval-plugin/1",
+  "kind": "metric",
+  "id": "r2r_ce_standard",
+  "version": "1",
+  "requires_evidence": [
+    "trajectory.goal_distances_m",
+    "trajectory.positions_xyz_m",
+    "reference.geodesic_start_to_goal_m",
+    "reference.success_radius_m"
+  ],
+  "metric_set": {
+    "schema_version": "nav-eval-metric-set/0.1",
+    "id": "r2r_ce_standard",
+    "evidence_schema": "habitat-r2r-evidence/1",
+    "metrics": [
+      {
+        "entrypoint": "nav_eval.evaluation.metrics:R2RCESuccess"
+      },
+      {
+        "entrypoint": "nav_eval.evaluation.metrics:R2RCESPL"
+      },
+      {
+        "entrypoint": "nav_eval.evaluation.metrics:R2RCENE"
+      },
+      {
+        "entrypoint": "nav_eval.evaluation.metrics:R2RCEOracleSuccess"
+      }
+    ]
+  }
+}
+

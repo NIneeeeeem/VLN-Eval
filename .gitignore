@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env
+build/
+dist/
+
+# Local tooling state / caches
+.ruff_cache/
+.claude/
+.omc/
+.omx/
+.agents/
+.codex/
+
+# Heavy local assets: kept on disk for reproduction, never published
+.isaac_deps/
+data/*
+!data/README.md
+third_party/*
+!third_party/README.md
+
+# Host-specific resource maps (machine interpreters/paths; build your own from example.json)
+configs/resources/*this-host*.json
+
+# Local asset directories suggested by the example resource maps
+weights/
+source/
+envs/
+
+# Run outputs (attempts, trajectories, evidence, scores)
+runs/*
+
+# Unpublished development material
+tests/
+docs/notes
+scripts/r2r_batch_matrix.py
+scripts/r2r_full_suite.py
+scripts/r2r_replicas_validation.py
+scripts/run_streamvln_batch_full.py
+scripts/validate_streamvln_batch.py
+scripts/compare_streamvln_paths.py

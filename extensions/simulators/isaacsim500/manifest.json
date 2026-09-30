@@ -1,0 +1,25 @@
+{
+  "schema_version": "nav-eval-plugin/1",
+  "kind": "simulator",
+  "id": "isaacsim500",
+  "version": "1",
+  "entrypoint": "extensions.simulators.isaacsim500.backend:IsaacBackend",
+  "defaults": {
+    "version": "5.0.0"
+  },
+  "capabilities": {
+    "offers_sensors": [
+      "rgb"
+    ]
+  },
+  "requires": {
+    "gpu": true,
+    "paths": [
+      "data_root",
+      "challenge_repo"
+    ]
+  },
+  "validation": {
+    "level": "unverified"
+  }
+}

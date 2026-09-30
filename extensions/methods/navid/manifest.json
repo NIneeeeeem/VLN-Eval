@@ -1,0 +1,37 @@
+{
+  "schema_version": "nav-eval-plugin/1",
+  "kind": "method",
+  "id": "navid",
+  "version": "1",
+  "entrypoint": "extensions.methods.navid.adapter:create",
+  "settings": [],
+  "defaults": {},
+  "observation": {
+    "width": 640,
+    "height": 480,
+    "hfov": 90
+  },
+  "capabilities": {
+    "requires_sensors": [
+      "rgb"
+    ],
+    "emits_actions": [
+      "primitive",
+      "stop"
+    ]
+  },
+  "action_semantics": {
+    "forward_m": 0.25,
+    "turn_rad": 0.5235987755982988
+  },
+  "requires": {
+    "gpu": true,
+    "paths": [
+      "checkpoint",
+      "repo_path"
+    ]
+  },
+  "validation": {
+    "level": "unverified"
+  }
+}

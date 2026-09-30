@@ -1,0 +1,14 @@
+{
+  "method": {
+    "python": "envs/navida/bin/python", "min_free_memory_mib": 12000,
+    "settings": {"checkpoint": "weights/navida", "repo_path": "source/NAVIDA"}
+  },
+  "environment": {
+    "python": "envs/habitat030/bin/python", "min_free_memory_mib": 4000,
+    "settings": {"data_root": "data"}
+  },
+  "replicas": [
+    {"method": {"gpu": 0}, "environment": {"gpu": 0}},
+    {"method": {"gpu": 1}, "environment": {"gpu": 1}}
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "schema_version": "nav-eval-experiment/1",
+  "benchmark": "r2r_ce", "simulator": "habitat024", "method": "streamvln",
+  "track": "native", "launcher": "python", "transport": "binary",
+  "benchmark_settings": {"benchmark_id": "r2r_val_unseen"},
+  "method_settings": {"preprocess_mode": "eager", "tokenizer_mode": "upstream"},
+  "episodes": ["1", "4"], "seed": 0, "claim": "diagnostic"
+}

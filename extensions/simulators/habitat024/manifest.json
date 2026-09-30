@@ -1,0 +1,25 @@
+{
+  "schema_version": "nav-eval-plugin/1",
+  "kind": "simulator",
+  "id": "habitat024",
+  "version": "1",
+  "entrypoint": "extensions.simulators.habitat.backend:HabitatBackend",
+  "defaults": {
+    "version": "0.2.4"
+  },
+  "capabilities": {
+    "offers_sensors": [
+      "rgb",
+      "depth"
+    ]
+  },
+  "requires": {
+    "gpu": true,
+    "paths": [
+      "data_root"
+    ]
+  },
+  "validation": {
+    "level": "unverified"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "schema_version": "nav-eval-plugin/1",
+  "kind": "method",
+  "id": "navida",
+  "version": "1",
+  "entrypoint": "extensions.methods.navida.adapter:create",
+  "settings": ["decoding"],
+  "resource_settings": ["repo_path"],
+  "defaults": {"decoding": "upstream"},
+  "observation": {
+    "width": 640,
+    "height": 480,
+    "hfov": 90
+  },
+  "capabilities": {
+    "batching": "independent_greedy",
+    "batching_requires": {"decoding": "greedy"},
+    "requires_sensors": [
+      "rgb"
+    ],
+    "emits_actions": [
+      "primitive",
+      "stop"
+    ]
+  },
+  "action_semantics": {
+    "forward_m": 0.25,
+    "turn_rad": 0.2617993877991494
+  },
+  "requires": {
+    "gpu": true,
+    "paths": [
+      "checkpoint"
+    ]
+  },
+  "validation": {
+    "level": "unverified"
+  }
+}

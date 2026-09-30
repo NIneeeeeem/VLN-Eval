@@ -1,0 +1,14 @@
+{
+  "schema_version": "nav-eval-experiment/1",
+  "benchmark": "vlnverse",
+  "simulator": "isaacsim500",
+  "method": "internvla-n1",
+  "track": "standardized",
+  "launcher": "python",
+  "transport": "binary",
+  "benchmark_settings": {
+    "benchmark_id": "vlnverse_fine_val_unseen"
+  },
+  "seed": 0,
+  "claim": "diagnostic"
+}

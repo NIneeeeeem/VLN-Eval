@@ -1,0 +1,37 @@
+{
+  "schema_version": "nav-eval-plugin/1",
+  "kind": "metric",
+  "id": "vlnverse_standard",
+  "version": "2",
+  "requires_evidence": [
+    "trajectory.metric_positions_xyz_m",
+    "trajectory.path_length_m",
+    "trajectory.positions_xyz_m",
+    "reference.goal_xyz_m",
+    "reference.geodesic_start_to_goal_m",
+    "reference.success_radius_m",
+    "reference.reference_path_xyz_m"
+  ],
+  "metric_set": {
+    "schema_version": "nav-eval-metric-set/0.1",
+    "id": "vlnverse_standard",
+    "evidence_schema": "vlnverse-evidence/2",
+    "metrics": [
+      {
+        "entrypoint": "nav_eval.evaluation.metrics:VLNVerseSuccess"
+      },
+      {
+        "entrypoint": "nav_eval.evaluation.metrics:VLNVerseSPL"
+      },
+      {
+        "entrypoint": "nav_eval.evaluation.metrics:VLNVerseNE"
+      },
+      {
+        "entrypoint": "nav_eval.evaluation.metrics:VLNVerseOSR"
+      },
+      {
+        "entrypoint": "nav_eval.evaluation.metrics:VLNVerseNDTW"
+      }
+    ]
+  }
+}

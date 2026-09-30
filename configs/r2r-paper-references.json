@@ -1,0 +1,38 @@
+{
+  "streamvln": {
+    "paper": {"SR": 56.9, "SPL": 51.9, "NE": 4.98, "OSR": 64.2},
+    "paper_url": "https://arxiv.org/html/2507.05240v1#S4.T1",
+    "released_checkpoint": {"SR": 56.4, "SPL": 50.2, "NE": 4.90, "OSR": 63.6},
+    "checkpoint_url": "https://github.com/InternRobotics/StreamVLN#-news",
+    "note": "本机为 v1-3 发布权重；主对照应采用官方 2025-09-28 更新成绩，同时列出原论文差值。"
+  },
+  "navida": {
+    "paper": {"SR": 61.4, "SPL": 54.7, "NE": 4.32, "OSR": 69.5},
+    "paper_url": "https://arxiv.org/html/2601.18188v1",
+    "note": "本机使用 qwen2.5_3b_r2r_next1_full_bs96；尚未证明该 next1 权重及适配器与论文 HPAC/IDS/熵引导执行完整配置对应。数值仅作参考，不能据此认证完整 NaVIDA 论文复现。"
+  },
+  "awarevln": {
+    "paper": {"SR": 65.4, "SPL": 55.1, "NE": 4.02, "OSR": 73.5},
+    "paper_url": "https://openaccess.thecvf.com/content/CVPR2026/papers/Guo_AwareVLN_Reasoning_with_Self-awareness_for_Vision-Language_Navigation_CVPR_2026_paper.pdf",
+    "note": "保留框架已验证的 Habitat 0.3.0 配置；上游 README 指定 Habitat 0.1.7，需保留此协议差异，不能视作严格同环境复现。"
+  },
+  "navila": {
+    "paper": {"SR": 54.0, "SPL": 49.0, "NE": 5.22, "OSR": 62.5},
+    "paper_url": "https://arxiv.org/html/2412.04453v2",
+    "note": "本机 navila-llama3-8b-8f 权重，Habitat 0.1.7；使用完整 NaVILA 行，非去除 human video 的消融行。"
+  },
+  "uni_navid": {
+    "paper": {"SR": 47.0, "SPL": 42.7, "NE": 5.58, "OSR": 53.3},
+    "paper_url": "https://arxiv.org/html/2412.06224v1",
+    "released_checkpoint": {"SR": 51.8, "SPL": 47.7, "NE": 4.96, "OSR": 57.4},
+    "checkpoint_url": "https://github.com/jzhzhang/NaVid-VLN-CE#pretrained-model",
+    "note": "本机 uninavid-7b-full-224-video-fps-1-grid-2 发布权重；官方仓库成绩高于原论文，分别对照；30 度转向、HFOV 120。"
+  },
+  "navid": {
+    "paper": {"SR": 37.4, "SPL": 35.9, "NE": 5.47, "OSR": 49.1},
+    "paper_url": "https://arxiv.org/html/2402.15852v2",
+    "released_checkpoint": {"SR": 41.9, "SPL": 36.5, "NE": 5.65, "OSR": 49.2},
+    "checkpoint_url": "https://github.com/jzhzhang/NaVid-VLN-CE#pretrained-model",
+    "note": "本机 r2r-rxr-training-split 更新权重，按 Uni-NaVid 训练策略训练；不等同原论文权重。30 度转向。"
+  }
+}
