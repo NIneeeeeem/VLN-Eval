@@ -1,0 +1,19 @@
+{
+  "schema_version": "nav-eval-experiment/1",
+  "benchmark": "vlnverse", "simulator": "isaacsim500", "method": "streamvln",
+  "track": "native", "launcher": "python", "transport": "binary",
+  "benchmark_settings": {
+    "benchmark_id": "vlnverse_fine_val_unseen",
+    "camera_pitch_deg": 0,
+    "max_navigation_steps": 500,
+    "max_control_steps": 500,
+    "max_task_steps": 25000
+  },
+  "observation": {"hfov": 90},
+  "episodes": [
+    "kujiale_0020_0_0", "kujiale_0020_1_3", "kujiale_0020_2_3", "kujiale_0020_3_2",
+    "kujiale_0030_0_0", "kujiale_0030_1_3", "kujiale_0030_2_3", "kujiale_0030_3_1",
+    "kujiale_0031_0_0", "kujiale_0031_3_2", "kujiale_0031_4_4", "kujiale_0031_6_3"
+  ],
+  "seed": 0, "claim": "diagnostic"
+}

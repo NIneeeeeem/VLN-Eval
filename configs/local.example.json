@@ -1,0 +1,14 @@
+{
+  "runtimes": {
+    "streamvln": {
+      "python": "envs/nav_streamvln/bin/python",
+      "min_free_memory_mib": 12000,
+      "settings": {"checkpoint": "checkpoints/streamvln"}
+    },
+    "habitat024": {
+      "python": "envs/nav_streamvln/bin/python",
+      "min_free_memory_mib": 4000,
+      "settings": {"data_root": "data"}
+    }
+  }
+}

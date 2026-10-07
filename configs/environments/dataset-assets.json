@@ -1,0 +1,37 @@
+{
+  "objectnav": {
+    "url": "https://dl.fbaipublicfiles.com/habitat/data/datasets/objectnav/m3d/v1/objectnav_mp3d_v1.zip",
+    "target": "data/datasets/objectnav/mp3d/v1",
+    "splits": ["val", "val_mini"], "format": "zip"
+  },
+  "instance_imagenav": {
+    "url": "https://dl.fbaipublicfiles.com/habitat/data/datasets/imagenav/hm3d/v2/instance_imagenav_hm3d_v2.zip",
+    "target": "data/datasets/instance_imagenav/hm3d/v2",
+    "splits": ["val", "val_mini"], "format": "zip"
+  },
+  "hm3d_ovon": {
+    "url": "https://huggingface.co/datasets/nyokoyama/hm3d_ovon/resolve/main/hm3d.tar.gz",
+    "target": "data/datasets/ovon/hm3d/v1",
+    "splits": ["val_seen", "val_unseen", "val_seen_synonyms"], "format": "tar"
+  },
+  "goat_bench": {
+    "url": "https://drive.usercontent.google.com/download?id=1N0UbpXK3v7oTphC4LoDqlNeMHbrwkbPe&export=download&confirm=t",
+    "target": "data/datasets/goat_bench/hm3d/v1",
+    "splits": ["val_seen", "val_unseen", "val_seen_synonyms"], "format": "zip"
+  },
+  "multion_hssd": {
+    "url": "https://aspis.cmpt.sfu.ca/projects/langmon/minival",
+    "target": "data/datasets",
+    "splits": ["minival"], "format": "zip"
+  },
+  "multion_mp3d": {
+    "url": "https://aspis.cmpt.sfu.ca/projects/multion/multinav.zip",
+    "target": "data/datasets/multinav/3_ON",
+    "splits": ["val"], "required_parent": "3_ON", "format": "zip"
+  },
+  "multion_objects": {
+    "url": "https://aspis.cmpt.sfu.ca/projects/multion/objects.zip",
+    "target": "data/objects/multion",
+    "strip_prefix": "objects", "splits": [], "format": "zip"
+  }
+}

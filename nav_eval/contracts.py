@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import asdict, dataclass, field
-from typing import Any, Protocol
+from typing import Any
 
 SCHEMA_VERSION = "nav-eval/0.2"
 
@@ -61,7 +61,7 @@ class PolicyObservation:
 
 @dataclass(frozen=True)
 class Action:
-    kind: str  # stop | primitive | twist | camera_tilt | wait; trajectory_se2 reserved
+    kind: str  # stop | primitive | twist | camera_tilt | wait
     values: dict[str, Any] = field(default_factory=dict)
     frame: str = "base_link"
 
@@ -77,43 +77,15 @@ class ActionBatch:
     # First version executes each action in order and checks termination after each.
 
 
-class MethodAdapter(Protocol):
-    """Owns all method state, including map, KV cache, and both systems of N1."""
-
-    def describe(self) -> dict[str, Any]: ...
-    def reset(self, context: EpisodeContext) -> None: ...
-    def act(self, observation: PolicyObservation) -> ActionBatch: ...
-    def observe_transition(self, transition: dict[str, Any]) -> None: ...
-    def close_episode(self) -> None: ...
-
-
-class SimulatorBackend(Protocol):
-    """Internal to the benchmark worker, never sent to the method process."""
-
-    def initialize(self, task_config: Any) -> Any: ...
-    def reset(self, private_episode: Any, seed: int) -> Any: ...
-    def step(self, native_action: Any) -> Any: ...
-    def close(self) -> None: ...
-
-
-class BenchmarkAdapter(Protocol):
-    """Owns dataset, observation allowlist, termination and evidence capture; metrics are separate."""
-
-    def describe(self) -> dict[str, Any]: ...
-    def episode_ids(self) -> list[str]: ...
-    def reset(self, episode_id: str, seed: int) -> tuple[EpisodeContext, PolicyObservation]: ...
-    def step(self, action: Action) -> tuple[PolicyObservation, bool, bool]: ...
-    def finish(self) -> dict[str, Any]: ...  # execution facts and evaluator-only evidence
-    def close(self) -> None: ...
-
-
 def finite_number(value: Any, name: str) -> float:
     if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
         raise ContractError(f"{name} must be a finite number")
     return float(value)
 
 
-def validate_action(raw: dict[str, Any]) -> Action:
+def validate_action(raw: dict[str, Any] | Action) -> Action:
+    if isinstance(raw, Action):
+        raw = vars(raw)
     if not isinstance(raw, dict) or set(raw) - {"kind", "values", "frame"}:
         raise ContractError("invalid action envelope")
     kind, values = raw.get("kind"), raw.get("values", {})

@@ -1,0 +1,45 @@
+{
+  "schema_version": "nav-eval-plugin/1",
+  "kind": "method",
+  "id": "internvla-n1",
+  "version": "1",
+  "entrypoint": "extensions.methods.internvla_n1.adapter:create",
+  "settings": [
+    "mode"
+  ],
+  "defaults": {
+    "mode": "dual_system"
+  },
+  "observation": {
+    "width": 640,
+    "height": 480,
+    "hfov": 79
+  },
+  "capabilities": {
+    "accepts_goals": [
+      "language"
+    ],
+    "requires_sensors": [
+      "rgb",
+      "depth"
+    ],
+    "emits_actions": [
+      "camera_tilt",
+      "primitive",
+      "stop"
+    ]
+  },
+  "action_semantics": {
+    "forward_m": 0.25,
+    "turn_rad": 0.2617993877991494
+  },
+  "requires": {
+    "gpu": true,
+    "paths": [
+      "checkpoint"
+    ]
+  },
+  "validation": {
+    "level": "unverified"
+  }
+}

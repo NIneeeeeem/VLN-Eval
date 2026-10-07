@@ -12,6 +12,10 @@
     "hfov": 90
   },
   "capabilities": {
+    "accepts_goals": [
+      "language",
+      "object_category"
+    ],
     "requires_sensors": [
       "rgb"
     ],
@@ -27,11 +31,13 @@
   "requires": {
     "gpu": true,
     "paths": [
-      "checkpoint",
-      "repo_path"
+      "checkpoint"
     ]
   },
   "validation": {
     "level": "unverified"
-  }
+  },
+  "resource_paths": [
+    "vision_tower"
+  ]
 }

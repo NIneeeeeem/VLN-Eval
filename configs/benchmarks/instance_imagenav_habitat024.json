@@ -1,0 +1,5 @@
+{
+  "benchmark": "instance_imagenav", "simulator": "habitat024",
+  "benchmark_settings": {"benchmark_id": "instance_imagenav_hm3d_val_mini"},
+  "environment": {"settings": {"data_root": "data"}}
+}

@@ -5,15 +5,23 @@ import math
 import time
 from dataclasses import asdict
 
-from nav_eval.contracts import (ContractError, EpisodeContext, Goal, PolicyObservation,
-                                PolicyViolation, SensorSpec, validate_action, validate_observation)
+from nav_eval.contracts import (
+    ContractError,
+    EpisodeContext,
+    Goal,
+    PolicyObservation,
+    PolicyViolation,
+    SensorSpec,
+    validate_observation,
+)
 from nav_eval.sdk.method import MethodBoundaryAdapter, RuntimeReply
 
 
 def public_observation(raw, geometry=None):
     validate_observation(raw)
+    specs = {}
     for name, metadata in raw["sensor_specs"].items():
-        spec = SensorSpec(**metadata)
+        spec = specs[name] = SensorSpec(**metadata)
         if spec.source not in {"rendered", "measured", "estimated"}:
             raise ContractError(f"privileged sensor: {name}")
         if spec.modality == "depth" and spec.unit != "m":
@@ -45,7 +53,7 @@ def public_observation(raw, geometry=None):
                 if field in geometry and actual != geometry[field]:
                     raise ContractError(f"live sensor {field} differs from resolved observation")
     return PolicyObservation(raw["episode_id"], raw["sequence"], raw["sim_time_s"], raw["sensors"],
-                             {k: SensorSpec(**v) for k, v in raw["sensor_specs"].items()}, raw.get("control_tick"))
+                             specs, raw.get("control_tick"))
 
 
 class ServiceRuntime:
@@ -63,11 +71,7 @@ class ServiceRuntime:
         result = self.service.call("act", {"session_id": generation_id, "observation": asdict(observation)})
         if result.get("episode_id") != observation.episode_id:
             raise PolicyViolation("method replied for a different episode")
-        try:
-            actions = [validate_action(a) for a in result["actions"]]
-        except (KeyError, TypeError, ContractError) as error:
-            raise PolicyViolation(f"invalid method action: {error}") from error
-        return RuntimeReply(generation_id, result.get("observation_sequence"), actions)
+        return RuntimeReply(generation_id, result.get("observation_sequence"), result.get("actions"))
 
     def observe_transition(self, transition, generation_id):
         self.service.call("observe_transition", {"session_id": generation_id, "transition": transition})
@@ -104,6 +108,10 @@ class WorkerService:
                     raise ContractError(f"live method {key} differs from manifest")
             self.boundary = MethodBoundaryAdapter(ServiceRuntime(self.service),
                 required_sensors=caps["requires_sensors"], emitted_actions=caps["emits_actions"])
+        else:
+            required = set(self.config.get("capabilities", {}).get("requires_sensors", []))
+            if required - set(caps.get("offers_sensors", [])):
+                raise ContractError("live benchmark does not offer required task sensors")
         self.startup_s = time.perf_counter() - start
         self.ready = True
 
@@ -121,6 +129,7 @@ class WorkerService:
         if operation == "attest":
             import importlib.metadata
             import platform
+
             from nav_eval.storage import file_digest
             files = self.service.asset_files() if hasattr(self.service, "asset_files") else []
             if not isinstance(files, dict):
@@ -155,11 +164,24 @@ class WorkerService:
         start = time.perf_counter()
         try:
             if not self.boundary:
-                return self.service.call(operation, payload)
+                result = self.service.call(operation, payload)
+                required = set(self.config.get("capabilities", {}).get("requires_sensors", []))
+                if required and operation in {"reset", "step"}:
+                    observation = result["observation"]
+                    public_observation(observation, self.config.get("observation"))
+                    if required - set(observation["sensors"]):
+                        raise ContractError("live observation is missing required task sensors")
+                    selected = set(self.config.get("observation", {}).get("sensors", []))
+                    if set(observation["sensors"]) - selected:
+                        raise ContractError("live observation includes undeclared sensors")
+                return result
             if operation == "reset":
                 context = payload["context"]
                 if set(context) != {"episode_id", "goal", "embodiment", "seed"}:
                     raise ContractError("private or invalid episode context")
+                accepted = self.config.get("capabilities", {}).get("accepts_goals")
+                if accepted is not None and context["goal"].get("kind") not in accepted:
+                    raise ContractError("method does not accept the episode goal kind")
                 import random
                 import sys
                 random.seed(context["seed"])

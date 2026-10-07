@@ -1,0 +1,10 @@
+{
+  "schema_version": "nav-eval-plugin/1", "kind": "metric", "id": "multion_captured", "version": "1",
+  "requires_evidence": ["upstream_metrics_by_tick"],
+  "metric_set": {"schema_version": "nav-eval-metric-set/0.1", "id": "multion_captured", "evidence_schema": "upstream-habitat-captured-metrics/1", "metrics": [
+    {"entrypoint": "extensions.metrics.upstream_habitat_standard:MultiONProgress"},
+    {"entrypoint": "extensions.metrics.upstream_habitat_standard:MultiONPPL"},
+    {"entrypoint": "extensions.metrics.upstream_habitat_standard:MultiONSuccess"},
+    {"entrypoint": "extensions.metrics.upstream_habitat_standard:MultiONMSPL"}
+  ]}
+}

@@ -9,14 +9,16 @@
   },
   "capabilities": {
     "offers_sensors": [
-      "rgb"
+      "rgb",
+      "depth"
     ]
   },
   "requires": {
+    "main_thread": true,
+    "modules": ["isaacsim"],
     "gpu": true,
     "paths": [
-      "data_root",
-      "challenge_repo"
+      "data_root"
     ]
   },
   "validation": {

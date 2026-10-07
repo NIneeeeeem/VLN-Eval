@@ -1,0 +1,19 @@
+{
+  "schema_version": "nav-eval-experiment/1",
+  "benchmark": "rxr_ce",
+  "simulator": "habitat024",
+  "method": "navid",
+  "track": "native",
+  "launcher": "python",
+  "transport": "binary",
+  "benchmark_settings": {
+    "benchmark_id": "rxr_val_unseen",
+    "languages": [
+      "en-IN",
+      "en-US"
+    ]
+  },
+  "episode_limit": 1,
+  "seed": 0,
+  "claim": "diagnostic"
+}

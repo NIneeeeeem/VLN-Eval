@@ -1,10 +1,10 @@
 {
   "method": {
-    "python": "envs/navida/bin/python", "min_free_memory_mib": 12000,
-    "settings": {"checkpoint": "weights/navida", "repo_path": "source/NAVIDA"}
+    "python": "envs/nav_vlm/bin/python", "min_free_memory_mib": 12000,
+    "settings": {"checkpoint": "checkpoints/navida"}
   },
   "environment": {
-    "python": "envs/habitat030/bin/python", "min_free_memory_mib": 4000,
+    "python": "envs/nav_habitat030/bin/python", "min_free_memory_mib": 4000,
     "settings": {"data_root": "data"}
   },
   "replicas": [

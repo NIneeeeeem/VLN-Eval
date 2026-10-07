@@ -1,0 +1,34 @@
+{
+  "implementation_origin": "gavln",
+  "modifications": "Selected function bodies relocated unchanged; old method modules re-export them.",
+  "origins": [
+    {
+      "method": "gavln",
+      "source": "https://ghproxy.net/https://github.com/jahhaoyang/GA-VLN",
+      "revision": "cc6086b7081a346695abecf6821f827e2db44a43",
+      "license_note": "See notices/ and retained source headers; the Nav-Eval root license does not override upstream terms. No top-level license grant was found in this revision; do not assume permissive redistribution.",
+      "original_file": "llava/mm_utils.py",
+      "function_sha256": {
+        "expand2square": "ce297a2201fa82f8739ce79369dc16c7aadb4541932275d37e89d1354977c290",
+        "select_best_resolution": "981d84e89161df926f7167910d68988e212441b4283656e2e77624f812c8c9cb",
+        "resize_and_pad_image": "7233ff1a30bf2c0795fc978f99db7053bc33bb3135a692cea42887fcdcfd8b68",
+        "divide_to_patches": "2b26313e59bf7e9d39d95c2d0a58143631b27cd85db4a6f2cd393d15f01ffd22",
+        "get_anyres_image_grid_shape": "a916b8b895818988fa9f0a4d6275065f77a6900e12f5d178d11fc6f8709974e4"
+      }
+    },
+    {
+      "method": "streamvln",
+      "source": "https://github.com/InternRobotics/StreamVLN",
+      "revision": "e48f6ff7e9201d93aae003e8f64b04c00cec13bc",
+      "license_note": "See notices/ and retained source headers; the Nav-Eval root license does not override upstream terms. StreamVLN README declares CC BY-NC-SA 4.0.",
+      "original_file": "llava/mm_utils.py",
+      "function_sha256": {
+        "expand2square": "ce297a2201fa82f8739ce79369dc16c7aadb4541932275d37e89d1354977c290",
+        "select_best_resolution": "981d84e89161df926f7167910d68988e212441b4283656e2e77624f812c8c9cb",
+        "resize_and_pad_image": "7233ff1a30bf2c0795fc978f99db7053bc33bb3135a692cea42887fcdcfd8b68",
+        "divide_to_patches": "2b26313e59bf7e9d39d95c2d0a58143631b27cd85db4a6f2cd393d15f01ffd22",
+        "get_anyres_image_grid_shape": "a916b8b895818988fa9f0a4d6275065f77a6900e12f5d178d11fc6f8709974e4"
+      }
+    }
+  ]
+}

@@ -20,7 +20,7 @@ from nav_eval.contracts import (
 class RuntimeReply:
     generation_id: str
     observation_sequence: int
-    actions: list[Action]
+    actions: list[Action | dict]
 
 
 class UpstreamRuntime(Protocol):
@@ -52,8 +52,9 @@ class MethodBoundaryAdapter:
         self.ended = False
 
     def reset(self, context: EpisodeContext):
-        if context.goal.kind != "language":
-            raise ContractError("this method variant requires a language goal")
+        # Goal-kind acceptance is method policy, not a platform rule: the wire
+        # contract negotiates language | object_category | image_reference, and
+        # each method runtime rejects kinds it cannot consume.
         self.close_episode()
         generation = uuid.uuid4().hex
         try:
@@ -65,7 +66,7 @@ class MethodBoundaryAdapter:
         self.last_decision, self.last_feedback, self.ended = -1, 0, False
 
     def _public_observation(self, observation):
-        validate_observation(asdict(observation))
+        validate_observation(vars(observation))
         if self.context is None or observation.episode_id != self.context.episode_id:
             raise ContractError("observation belongs to an inactive or different episode")
         missing = set(self.sensor_names) - set(observation.sensors)
@@ -98,7 +99,7 @@ class MethodBoundaryAdapter:
             raise ContractError("stale runtime reply: generation or observation mismatch")
         if not isinstance(reply.actions, list) or not 1 <= len(reply.actions) <= 16:
             raise ContractError("runtime must return 1..16 explicit actions; empty is not STOP")
-        actions = [validate_action(action.to_dict()) for action in reply.actions]
+        actions = [validate_action(action) for action in reply.actions]
         if any(action.kind not in self.emitted_actions for action in actions):
             raise ContractError("runtime action not declared by this method variant")
         return ActionBatch(public.episode_id, public.sequence, actions)

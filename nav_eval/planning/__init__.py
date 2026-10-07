@@ -1,10 +1,12 @@
 """Resolve an experiment once; launchers never invent scientific defaults."""
 from __future__ import annotations
 
-from copy import deepcopy
 import math
+from copy import deepcopy
+from pathlib import Path
 
-from nav_eval.plugins import Registry, digest
+from nav_eval.plugins import Registry, configured_binding, digest, resource_path_keys, resource_setting_keys
+from nav_eval.local_config import selected_resources
 
 SCHEMA = "nav-eval-experiment/1"
 
@@ -27,18 +29,41 @@ def resolve(config, resources=None, registry=None):
     benchmark = registry.get("benchmark", config["benchmark"])
     simulator = registry.get("simulator", config["simulator"])
     method = registry.get("method", config["method"])
+    resources = selected_resources(resources, config)
     bm, sm, mm = benchmark.manifest, simulator.manifest, method.manifest
     binding = deepcopy(bm.get("bindings", {}).get(sm["id"]))
     if not binding:
         raise ValueError(f"missing benchmark binding: {bm['id']} / {sm['id']}")
+    binding = configured_binding(binding, {**bm.get("defaults", {}),
+        **config.get("benchmark_settings", {}), **binding.get("settings", {})})
     if not mm.get("entrypoint"):
         raise ValueError(f"unbound method implementation: {mm['id']}")
+    goal_kinds = bm.get("goal_kinds")
+    accepted_goals = mm.get("capabilities", {}).get("accepts_goals")
+    for field, value in (("goal_kinds", goal_kinds), ("accepts_goals", accepted_goals)):
+        if value is not None and (not isinstance(value, list) or not value
+                                  or any(not isinstance(kind, str) or not kind for kind in value)):
+            raise ValueError(f"{field} must be a nonempty list of goal kind strings")
+    if binding.get("requires_goal_declaration") and accepted_goals is None:
+        raise ValueError(f"{mm['id']}: explicit accepts_goals declaration required by {bm['id']}")
+    if goal_kinds is not None and accepted_goals is not None:
+        missing_goals = set(goal_kinds) - set(accepted_goals)
+        if missing_goals:
+            raise ValueError(f"incompatible goal kinds: {mm['id']} does not accept {sorted(missing_goals)}")
+        goal_compatibility = "declared_compatible"
+    else:
+        goal_compatibility = "unknown"
     observation = deepcopy(bm.get("observation", {}))
     if track == "native":
         observation.update(mm.get("observation", {}))
     observation.update(config.get("observation", {}))
     offered = set(sm.get("capabilities", {}).get("offers_sensors", []))
+    offered.update(binding.get("offers_sensors", []))
     required = set(mm.get("capabilities", {}).get("requires_sensors", []))
+    task_sensors = set(binding.get("requires_sensors", []))
+    if task_sensors - required:
+        raise ValueError(f"method does not consume required task sensors: {sorted(task_sensors - required)}")
+    required.update(task_sensors)
     sensors = observation.get("sensors", sorted(required))
     if required - set(sensors) or set(sensors) - offered:
         raise ValueError("incompatible sensors in method, observation or simulator")
@@ -113,8 +138,8 @@ def resolve(config, resources=None, registry=None):
             raise ValueError("shared inference requires isolated workers and parallelism >= 2")
         if mm["capabilities"].get("batching") != "independent_greedy":
             raise ValueError(f"{mm['id']}: shared inference requires independent_greedy batching capability")
-        # Keep singleton numerical behavior until the user explicitly chooses a
-        # larger experimental batch and validates its closed-loop equivalence.
+        # Keep singleton numerical behavior; larger batches additionally require
+        # the batching settings below and validated closed-loop equivalence.
         size, delay = inference.get("max_batch_size", 1), inference.get("max_wait_ms", 5)
         if type(size) is not int or not 1 <= size <= parallelism:
             raise ValueError("max_batch_size must be between 1 and parallelism")
@@ -146,7 +171,7 @@ def resolve(config, resources=None, registry=None):
     def role_resource(role, manifest):
         base, override = resources.get("runtimes", {}).get(manifest["id"], {}), resources.get(role, {})
         result = {**base, **override, "settings": {**base.get("settings", {}), **override.get("settings", {})}}
-        allowed = set(manifest.get("requires", {}).get("paths", [])) | set(manifest.get("resource_settings", []))
+        allowed = resource_setting_keys(manifest)
         invalid = set(result["settings"]) - allowed
         if invalid:
             raise ValueError(f"{role}: unknown or scientific resource settings: {sorted(invalid)}; use experiment settings")
@@ -154,13 +179,31 @@ def resolve(config, resources=None, registry=None):
     method_role = {"role": "method", "plugin": method.identity(), "root": str(method.root),
                    "entrypoint": mm["entrypoint"], "capabilities": mm["capabilities"],
                    "settings": method_settings, "observation": observation,
-                   "resource": role_resource("method", mm), "requires": mm.get("requires", {})}
+                   "resource": role_resource("method", mm), "requires": mm.get("requires", {}),
+                   "resource_paths": mm.get("resource_paths", []),
+                   "resource_companions": mm.get("resource_companions", {})}
     environment = {"role": "benchmark", "plugin": benchmark.identity(), "root": str(benchmark.root),
                    "entrypoint": binding["entrypoint"], "settings": benchmark_settings,
                    "simulator": {**simulator.identity(), "entrypoint": sm["entrypoint"],
                                  "root": str(simulator.root), "settings": sm.get("defaults", {})},
                    "observation": observation, "capabilities": binding,
                    "resource": role_resource("environment", sm), "requires": sm.get("requires", {})}
+    for spec, manifest in ((method_role, mm), (environment, bm), (environment["simulator"], sm)):
+        if manifest.get("code_dependencies"):
+            spec["code_dependencies"] = manifest["code_dependencies"]
+    # Freeze host paths before workers change cwd. Keep the scientific protocol
+    # relative/portable and leave Docker's container paths untouched.
+    if launcher != "docker":
+        for spec in (method_role, environment):
+            spec["settings"] = deepcopy(spec["settings"])
+            manifest = mm if spec is method_role else sm
+            keys = resource_path_keys(manifest)
+            if spec is environment:
+                keys.add("repo_root")
+            for settings in (spec["settings"], spec["resource"]["settings"]):
+                for key in keys:
+                    if settings.get(key):
+                        settings[key] = str(Path(settings[key]).resolve())
     replicas = resources.get("replicas")
     if replicas is None:
         if parallelism > 1:
@@ -183,7 +226,20 @@ def resolve(config, resources=None, registry=None):
                 raise ValueError(f"replica {index} {role}: explicitly allocate a GPU")
             allocation[role] = {**spec["resource"], **override,
                                 "env": {**spec["resource"].get("env", {}), **override.get("env", {})}}
+            if launcher != "docker":
+                resource = allocation[role]
+                resource["cwd"] = str(Path(resource.get("cwd", Path.cwd())).resolve())
+                interpreter = resource.get("python")
+                if interpreter and "/" in interpreter:
+                    # A venv's symlink path selects its environment; resolve only cwd/assets.
+                    resource["python"] = str(Path(interpreter).expanduser().absolute())
+                for key in ("pythonpath", "library_paths"):
+                    if key in resource:
+                        resource[key] = [str(Path(path).resolve()) for path in resource[key]]
         allocations.append(allocation)
+    # The single-worker path and replica_plans must see the same allocation.
+    for role, spec in (("method", method_role), ("environment", environment)):
+        spec["resource"] = deepcopy(allocations[0][role])
     if mode == "shared" and any(a["method"] != allocations[0]["method"] for a in allocations[1:]):
         raise ValueError("shared inference requires identical method deployment resources across replicas")
     claim = config.get("claim", "diagnostic")
@@ -199,6 +255,9 @@ def resolve(config, resources=None, registry=None):
                               "inference": inference,
                               "max_infrastructure_retries": config.get("max_infrastructure_retries", 0)},
                 "claim": claim, "status": "resolved", "runtime_verified": False,
+                "compatibility": {"goals": goal_compatibility},
                 "notes": ["Manifest compatibility does not establish upstream parity."]}
+    if goal_compatibility == "unknown":
+        resolved["notes"].append("Goal compatibility is unknown: legacy plugin lacks goal capability metadata.")
     resolved["plan_sha256"] = digest(resolved)
     return resolved

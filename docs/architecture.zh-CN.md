@@ -5,7 +5,7 @@
 ## 单一执行链路
 
 ```text
-experiment + host resources
+experiment + permanent local installation
   -> manifest discovery
   -> resolve / preflight
   -> resident environment slots + isolated/shared model workers
@@ -60,14 +60,14 @@ transition、close 与模型计算互斥。SDK 不持有方法历史或实现 pr
 使用 benchmark 默认值。显式 observation 覆盖会进入比较键。
 
 计划会冻结 benchmark、simulator、binding、任务设置、观测、控制器、指标、seed 和
-episode 选择。绝对路径仅存在资源映射；执行结果记录源码、插件、模型和资产摘要。
+episode 选择。绝对路径保存在永久本机配置 `configs/local.json`；执行结果记录源码、插件、模型和资产摘要。
 
 离散任务使用 `control_tick`，不会把动作序号伪装为物理秒。测地距离不可用时保存
 null 与原因，依赖该证据的指标返回 unavailable。GT 和几何证据只进入评估产物，
 不会发给方法。
 
-所有内置真实插件当前仍以 diagnostic/unverified 为验证级别。入口可导入、配置可解析、
-真实 episode 能运行和论文级复现认证是不同层级，不能互相替代。
+每个插件 manifest 的 `validation.level` 记录其已验证的层级：入口可导入、配置可解析、
+真实 episode 可运行、全量 split 认证。
 
 ## 部署、存储与恢复
 

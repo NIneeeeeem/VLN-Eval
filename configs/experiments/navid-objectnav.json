@@ -1,0 +1,15 @@
+{
+  "schema_version": "nav-eval-experiment/1",
+  "benchmark": "objectnav",
+  "simulator": "habitat030",
+  "method": "navid",
+  "track": "native",
+  "launcher": "python",
+  "transport": "binary",
+  "benchmark_settings": {
+    "benchmark_id": "objectnav_mp3d_val"
+  },
+  "episode_limit": 4,
+  "seed": 0,
+  "claim": "diagnostic"
+}

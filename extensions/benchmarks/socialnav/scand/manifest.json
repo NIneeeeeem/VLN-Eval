@@ -1,0 +1,11 @@
+{
+  "schema_version": "nav-eval-plugin/1",
+  "kind": "benchmark",
+  "id": "scand",
+  "version": "1",
+  "execution_mode": "offline",
+  "entrypoint": "extensions.benchmarks.socialnav.scand.evaluate:evaluate_files",
+  "bindings": {},
+  "validation": {"level": "unverified"},
+  "description": "Diagnostic trajectory imitation error on aligned recorded demonstrations; no closed-loop navigation success claim."
+}

@@ -1,0 +1,30 @@
+# Runtime-only dependencies for the VLN-VERSE Isaac Sim 5.0.0 adapter.
+# PyTorch, NumPy, Isaac Sim and InternUtopia itself are installed by
+# scripts/setup_isaac.sh in their required order.
+addict==2.4.0
+aiohttp-cors==0.7.0
+ansi2txt==0.2.0
+gymnasium==1.0.0
+httpcore==1.0.8
+httpx==0.25.2
+inputs==0.5
+ipython==8.20.0
+lcm==1.5.0
+onnxruntime==1.19.2
+openai==1.29.0
+pydantic>=2,<3
+ray[default]==2.40.0
+requests==2.32.3
+rsl-rl-lib==2.2.1
+scikit-image==0.25.2
+scipy==1.15.3
+transformers==4.26.1
+vuer==0.0.32rc7
+# Keep the ABI compatible with Isaac Sim's NumPy 1.26.x stack.
+opencv-python<4.12
+# Keep Isaac Sim 5's SDK pins; newer build/HTTP tooling conflicts with them.
+filelock==3.13.1
+packaging==23.0
+wheel==0.45.1
+virtualenv==20.26.6
+wsproto==1.2.0

@@ -9,7 +9,7 @@ from __future__ import annotations
 import re
 import time
 
-from nav_eval.contracts import ContractError, SCHEMA_VERSION, validate_observation
+from nav_eval.contracts import SCHEMA_VERSION, ContractError, validate_observation
 from nav_eval.tensorcode import decode_tensor
 
 NUM_VIDEO_FRAMES = 8
@@ -70,9 +70,8 @@ def parse_action_sequence(output):
 class NaVILAMethodService:
     """RGB-only NaVILA policy with worker-local model and episode state."""
 
-    def __init__(self, checkpoint, repo_path):
+    def __init__(self, checkpoint):
         self.checkpoint = checkpoint
-        self.repo_path = repo_path
         self.model = None
         self.sessions = {}
         self.phases = {"preprocess_s": 0.0, "generate_s": 0.0, "generation_calls": 0}
@@ -81,20 +80,15 @@ class NaVILAMethodService:
         if self.model is not None:
             return
         import os
-        import sys
-
-        if not os.path.isdir(self.checkpoint):
-            raise ContractError(f"NaVILA checkpoint directory not found: {self.checkpoint}")
-        if not os.path.isdir(self.repo_path):
-            raise ContractError(f"NaVILA repository not found: {self.repo_path}")
-        if self.repo_path not in sys.path:
-            sys.path.insert(0, self.repo_path)
-
         import torch
-        from llava.constants import IMAGE_TOKEN_INDEX
-        from llava.conversation import SeparatorStyle, conv_templates
-        from llava.mm_utils import KeywordsStoppingCriteria, process_images, tokenizer_image_token
-        from llava.model.builder import load_pretrained_model
+        from .runtime.llava.constants import IMAGE_TOKEN_INDEX
+        from .runtime.llava.conversation import SeparatorStyle, conv_templates
+        from .runtime.llava.mm_utils import (
+            KeywordsStoppingCriteria,
+            process_images,
+            tokenizer_image_token,
+        )
+        from .runtime.llava.model.builder import load_pretrained_model
 
         model_name = os.path.basename(os.path.normpath(self.checkpoint))
         tokenizer, model, image_processor, _ = load_pretrained_model(self.checkpoint, model_name)

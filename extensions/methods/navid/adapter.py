@@ -7,5 +7,5 @@ def create(config):
     return NaVidMethodService(
         variant=config["plugin"]["id"],
         checkpoint=settings["checkpoint"],
-        repo_path=settings["repo_path"],
+        vision_tower=settings.get("vision_tower"),
     )

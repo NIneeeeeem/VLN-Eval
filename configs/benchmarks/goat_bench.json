@@ -1,0 +1,21 @@
+{
+  "benchmark": "goat_bench",
+  "simulator": "habitat024",
+  "benchmark_settings": {
+    "repo_root": "extensions/benchmarks/multigoal/goat_bench/runtime",
+    "task_config": "nav_eval_goat-habitat024.yaml",
+    "dataset_path": "data/datasets/goat_bench/hm3d/v1/val_seen/val_seen.json.gz",
+    "asset_paths": [
+      "goat_bench",
+      "config",
+      "data/scene_datasets",
+      "data/goat-assets/goal_cache"
+    ]
+  },
+  "environment": {"settings": {"data_root": "data"},
+    "cwd": "extensions/benchmarks/multigoal/goat_bench/runtime",
+    "pythonpath": [
+      "extensions/benchmarks/multigoal/goat_bench/runtime"
+    ]
+  }
+}

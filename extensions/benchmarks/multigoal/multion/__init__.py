@@ -1,0 +1,1 @@
+"""MultiON benchmark binding."""

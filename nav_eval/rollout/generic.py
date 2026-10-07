@@ -5,7 +5,12 @@ import json
 import time
 import uuid
 
-from nav_eval.contracts import ContractError, PolicyViolation, validate_action, validate_observation
+from nav_eval.contracts import (
+    ContractError,
+    PolicyViolation,
+    validate_action,
+    validate_observation,
+)
 
 GENERIC_ROLLOUT_SCHEMA = "nav-eval-rollout/0.3"
 MAX_DECISIONS_PER_EPISODE = 1000  # outer watchdog; the task budget is owned by the benchmark
@@ -27,11 +32,14 @@ def _episode_attempt(benchmark, method, episode_id, seed, bridge, wants_transiti
         initial = benchmark.call("reset", session_id=session_id, episode_id=episode_id, seed=seed)
         method.call("reset", session_id=session_id, context=initial["context"])
         obs = initial["observation"]
+        decision_limit = initial.get("decision_limit", MAX_DECISIONS_PER_EPISODE)
+        if type(decision_limit) is not int or not 1 <= decision_limit <= 100000:
+            raise ContractError("benchmark decision_limit must be an integer in [1, 100000]")
         reset_s = time.perf_counter() - start
         validate_observation(obs)
         if obs["episode_id"] != episode_id:
             raise ContractError("initial observation belongs to a different episode")
-        for _ in range(MAX_DECISIONS_PER_EPISODE):
+        for _ in range(decision_limit):
             before = time.perf_counter()
             batch = method.call("act", session_id=session_id, observation=obs)
             decision_s = time.perf_counter() - before

@@ -1,0 +1,52 @@
+# Portable MultiON HSSD task.  It deliberately uses only stock Habitat-Lab
+# configuration groups; the task implementation lives in the benchmark plugin.
+defaults:
+  - /benchmark/nav/pointnav: pointnav_hm3d
+  - /habitat/task/measurements: nav_eval_multion_sub_success
+  - _self_
+
+habitat:
+  environment:
+    max_episode_steps: 2500
+  simulator:
+    agents:
+      main_agent:
+        sim_sensors:
+          rgb_sensor:
+            width: 256
+            height: 256
+            hfov: 79
+          depth_sensor:
+            width: 256
+            height: 256
+            hfov: 79
+            normalize_depth: false
+  task:
+    type: NavEvalMultiON-v1
+    lab_sensors: {}
+    actions:
+      found:
+        type: NavEvalFoundAction
+    measurements:
+      multion_path_length:
+        type: NavEvalMultiONPathLength
+      multion_distance_to_currgoal:
+        type: NavEvalMultiONDistance
+      multion_sub_success:
+        type: NavEvalMultiONSubSuccess
+        success_distance: 0.5
+      progress:
+        type: NavEvalMultiONProgress
+      success:
+        type: NavEvalMultiONSuccess
+      mspl:
+        type: NavEvalMultiONMSPL
+      ppl:
+        type: NavEvalMultiONPPL
+  dataset:
+    type: NavEvalMultiON-v1
+    split: minival
+    # Download helper installs this complete scene; remove for full minival.
+    content_scenes: ["102816036"]
+    data_path: data/datasets/minival/minival.json.gz
+    scenes_dir: data/scene_datasets/fphab/scenes

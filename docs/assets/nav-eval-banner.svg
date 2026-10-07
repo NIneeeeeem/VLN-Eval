@@ -1,0 +1,170 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="420" viewBox="0 0 1200 420" fill="none" role="img" aria-labelledby="title desc">
+  <title id="title">Nav-eval — navigation tasks, evaluated together</title>
+  <desc id="desc">Vision-language, object-goal, image-goal, and multiple-goal navigation tasks share an evaluation harness. An instruction to walk past a sofa and stop by a chair accompanies an indoor floor plan, an agent with a field of view, a navigation trajectory, and a goal. The shared pipeline produces metrics and traces. This is a schematic, not measured results.</desc>
+  <defs>
+    <linearGradient id="background" x1="0" y1="0" x2="1200" y2="420" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#101e32"/>
+      <stop offset="1" stop-color="#162e42"/>
+    </linearGradient>
+    <radialGradient id="light" cx="0" cy="0" r="1" gradientTransform="translate(833 210) rotate(90) scale(245 420)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4bd6bf" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#4bd6bf" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse">
+      <path d="M28 0H0V28" stroke="#9ec3d7" stroke-opacity=".055"/>
+    </pattern>
+    <clipPath id="clip"><rect width="1200" height="420" rx="24"/></clipPath>
+  </defs>
+  <g clip-path="url(#clip)">
+    <rect width="1200" height="420" fill="url(#background)"/>
+    <rect width="1200" height="420" fill="url(#light)"/>
+    <rect x="350" width="850" height="420" fill="url(#grid)"/>
+
+    <!-- Compact wordmark; the shared evaluation illustration owns the canvas. -->
+    <g transform="translate(48 136)">
+      <rect width="34" height="34" rx="10" fill="#75ead0"/>
+      <path d="M9 25L17 8L25 25L17 21L9 25Z" fill="#12283a"/>
+      <path d="M17 8V21" stroke="#397968" stroke-width="1.5"/>
+    </g>
+    <g font-family="DejaVu Sans, Arial, sans-serif">
+      <text x="94" y="170" fill="#f6fbff" font-size="43" font-weight="700" letter-spacing="-1.8">nav-eval<tspan fill="#75ead0">.</tspan></text>
+      <text x="48" y="224" fill="#d9e6ef" font-size="23">Navigation tasks,</text>
+      <text x="48" y="258" fill="#d9e6ef" font-size="23">evaluated together.</text>
+    </g>
+
+    <!-- Different task contracts converge into the same evaluation harness. -->
+    <g fill="#142c40" stroke="#385368">
+      <rect x="388" y="42" width="198" height="62" rx="14"/>
+      <rect x="388" y="132" width="198" height="62" rx="14"/>
+      <rect x="388" y="222" width="198" height="62" rx="14"/>
+      <rect x="388" y="312" width="198" height="62" rx="14"/>
+    </g>
+    <g fill-opacity=".1">
+      <rect x="401" y="55" width="36" height="36" rx="10" fill="#75ead0"/>
+      <rect x="401" y="145" width="36" height="36" rx="10" fill="#8cbdff"/>
+      <rect x="401" y="235" width="36" height="36" rx="10" fill="#c5adff"/>
+      <rect x="401" y="325" width="36" height="36" rx="10" fill="#f7c77e"/>
+    </g>
+    <g stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <g stroke="#75ead0">
+        <path d="M411 64H427A2 2 0 0 1 429 66V77A2 2 0 0 1 427 79H420L414 83V79H411A2 2 0 0 1 409 77V66A2 2 0 0 1 411 64Z"/>
+        <path d="M414 69H424M414 74H421"/>
+      </g>
+      <g stroke="#8cbdff">
+        <rect x="412" y="153" width="14" height="12" rx="2"/>
+        <path d="M410 162V169H428V162M413 169V174M425 169V174"/>
+      </g>
+      <g stroke="#c5adff">
+        <rect x="409" y="244" width="20" height="18" rx="3"/>
+        <circle cx="423" cy="249" r="1.5"/>
+        <path d="M410 259L417 252L424 259M422 257L425 254L429 258"/>
+      </g>
+      <g stroke="#f7c77e">
+        <path d="M411 350L418 337L428 348"/>
+        <circle cx="411" cy="350" r="3" fill="#142c40"/>
+        <circle cx="418" cy="337" r="3" fill="#142c40"/>
+        <circle cx="428" cy="348" r="3" fill="#142c40"/>
+      </g>
+    </g>
+    <g font-family="DejaVu Sans, Arial, sans-serif" font-size="16" fill="#e0ebf3">
+      <text x="451" y="79" font-size="15">Vision-language</text>
+      <text x="451" y="169">Object goal</text>
+      <text x="451" y="259">Image goal</text>
+      <text x="451" y="349">Multiple goals</text>
+    </g>
+
+    <g stroke-width="2.5" stroke-linecap="round">
+      <path d="M586 73H606C657 73 654 165 706 165" stroke="#75ead0"/>
+      <path d="M586 163H606C656 163 658 195 706 195" stroke="#8cbdff"/>
+      <path d="M586 253H606C656 253 658 255 706 255" stroke="#c5adff"/>
+      <path d="M586 343H606C657 343 654 285 706 285" stroke="#f7c77e"/>
+    </g>
+    <g fill="#142c40" stroke-width="2">
+      <circle cx="586" cy="73" r="4" stroke="#75ead0"/>
+      <circle cx="586" cy="163" r="4" stroke="#8cbdff"/>
+      <circle cx="586" cy="253" r="4" stroke="#c5adff"/>
+      <circle cx="586" cy="343" r="4" stroke="#f7c77e"/>
+    </g>
+
+    <!-- A concrete vision-language episode illustrates the shared navigation loop. -->
+    <path d="M701 38H947A14 14 0 0 1 961 52V91A14 14 0 0 1 947 105H816L803 118L790 105H701A14 14 0 0 1 687 91V52A14 14 0 0 1 701 38Z" fill="#193b47" stroke="#75ead0" stroke-opacity=".5"/>
+    <g font-family="DejaVu Sans, Arial, sans-serif" font-size="16" fill="#dcf8ed">
+      <text x="705" y="65">Walk past the sofa,</text>
+      <text x="705" y="89">then stop by the chair.</text>
+    </g>
+
+    <rect x="706" y="131" width="257" height="194" rx="17" fill="#12283b" stroke="#69879a" stroke-width="1.5"/>
+    <rect x="721" y="146" width="227" height="164" rx="5" fill="url(#grid)"/>
+    <g fill="#203b50">
+      <path d="M722 147H803V205H722Z"/>
+      <path d="M865 147H948V208H865Z"/>
+      <path d="M722 256H803V309H722Z"/>
+      <path d="M865 257H948V309H865Z"/>
+    </g>
+    <g stroke="#7893a7" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M803 147V205H778M741 205H722"/>
+      <path d="M865 147V161M865 191V208H892M925 208H948"/>
+      <path d="M722 256H731M765 256H803V309"/>
+      <path d="M865 309V257H898M930 257H948"/>
+    </g>
+    <!-- Recognizable furniture grounds the language instruction in the scene. -->
+    <g stroke="#7893a7" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="733" y="160" width="51" height="24" rx="4" fill="#385368"/>
+      <path d="M733 169H784M740 169V184M777 169V184M758 169V184"/>
+      <rect x="918" y="155" width="16" height="15" rx="3" fill="#385368"/>
+      <path d="M915 166V174H937V166M919 174V179M933 174V179"/>
+      <rect x="877" y="271" width="54" height="23" rx="5" fill="#385368"/>
+      <path d="M884 271V294"/>
+      <rect x="768" y="279" width="19" height="16" rx="3" fill="#385368"/>
+    </g>
+
+    <path d="M747 287V229H833V182H906" stroke="#75ead0" stroke-opacity=".12" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M747 287V229H833V182H906" stroke="#75ead0" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+    <g fill="#12283b" stroke="#75ead0" stroke-width="2">
+      <circle cx="747" cy="287" r="5"/>
+      <circle cx="747" cy="229" r="3.5"/>
+      <circle cx="833" cy="229" r="3.5"/>
+      <circle cx="833" cy="182" r="3.5"/>
+    </g>
+    <!-- The viewing cone makes the agent's visual observation explicit. -->
+    <path d="M833 209L808 166Q833 153 858 166Z" fill="#75ead0" fill-opacity=".15"/>
+    <path d="M808 166Q833 153 858 166" stroke="#75ead0" stroke-opacity=".45" stroke-width="1.5"/>
+    <circle cx="833" cy="209" r="15" fill="#75ead0" fill-opacity=".1"/>
+    <path d="M833 198L841 217L833 213L825 217Z" fill="#edfff8"/>
+    <circle cx="906" cy="182" r="12" fill="#f7c77e" fill-opacity=".13"/>
+    <circle cx="906" cy="182" r="6" fill="#f7c77e"/>
+    <circle cx="906" cy="182" r="2" fill="#12283b"/>
+    <g stroke="#12283b" stroke-width="2">
+      <circle cx="706" cy="165" r="4.5" fill="#75ead0"/>
+      <circle cx="706" cy="195" r="4.5" fill="#8cbdff"/>
+      <circle cx="706" cy="255" r="4.5" fill="#c5adff"/>
+      <circle cx="706" cy="285" r="4.5" fill="#f7c77e"/>
+    </g>
+    <text x="835" y="365" text-anchor="middle" fill="#e0ebf3" font-family="DejaVu Sans, Arial, sans-serif" font-size="18">Shared evaluation</text>
+
+    <path d="M969 225H982M977 220L982 225L977 230" stroke="#b9d0df" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    <g transform="translate(0 24)">
+    <rect x="998" y="115" width="154" height="194" rx="15" fill="#183347" stroke="#385368"/>
+    <rect x="990" y="107" width="154" height="194" rx="15" fill="#142c40" stroke="#69879a"/>
+    <text x="1067" y="139" text-anchor="middle" fill="#e0ebf3" font-family="DejaVu Sans, Arial, sans-serif" font-size="16">Results</text>
+    <path d="M1008 154H1126" stroke="#385368"/>
+    <g fill="#213e52">
+      <rect x="1008" y="168" width="118" height="23" rx="5"/>
+      <rect x="1008" y="198" width="118" height="23" rx="5"/>
+      <rect x="1008" y="228" width="118" height="23" rx="5"/>
+      <rect x="1008" y="258" width="118" height="23" rx="5"/>
+    </g>
+    <circle cx="1020" cy="180" r="4" fill="#75ead0"/>
+    <circle cx="1020" cy="210" r="4" fill="#8cbdff"/>
+    <circle cx="1020" cy="240" r="4" fill="#c5adff"/>
+    <circle cx="1020" cy="270" r="4" fill="#f7c77e"/>
+    <g stroke="#9ab4c6" stroke-width="2" stroke-linecap="round">
+      <path d="M1034 180H1066M1080 180H1088M1102 180H1110"/>
+      <path d="M1034 210H1066M1080 210H1088M1102 210H1110"/>
+      <path d="M1034 240H1066M1080 240H1088M1102 240H1110"/>
+      <path d="M1034 270H1066M1080 270H1088M1102 270H1110"/>
+    </g>
+    <text x="1067" y="341" text-anchor="middle" fill="#a7bfce" font-family="DejaVu Sans, Arial, sans-serif" font-size="14">Metrics + traces</text>
+    </g>
+  </g>
+</svg>

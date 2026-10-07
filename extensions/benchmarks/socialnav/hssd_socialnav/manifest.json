@@ -1,0 +1,66 @@
+{
+  "schema_version": "nav-eval-plugin/1",
+  "kind": "benchmark",
+  "goal_kinds": ["language"],
+  "id": "hssd_socialnav",
+  "version": "1",
+  "default_simulator": "habitat030",
+  "splits": ["socialnav_hssd_val"],
+  "defaults": {
+    "benchmark_id": "socialnav_hssd_val",
+    "success_distance_m": 1.5,
+    "max_task_steps": 750,
+    "task_instruction": "Find the person in this home and navigate close to them, then stop.",
+    "enable_oracle": false
+  },
+  "settings": [
+    "benchmark_id",
+    "success_distance_m",
+    "max_task_steps",
+    "task_instruction",
+    "enable_oracle",
+    "simulator_version"
+  ],
+  "observation": {
+    "width": 640,
+    "height": 480,
+    "hfov": 90
+  },
+  "bindings": {
+    "habitat030": {
+      "entrypoint": "extensions.benchmarks.socialnav.hssd_socialnav.bindings.habitat:create",
+      "accepts_actions": [
+        "primitive",
+        "stop"
+      ],
+      "capture_schema": "habitat-socialnav-evidence/1",
+      "provides_evidence": [
+        "trajectory.goal_distances_m",
+        "trajectory.positions_xyz_m",
+        "reference.geodesic_start_to_goal_m",
+        "reference.success_radius_m"
+      ],
+      "clock": "discrete_control_ticks",
+      "action_semantics": {
+        "forward_m": 0.25,
+        "turn_rad": 0.2617993877991494
+      },
+      "settings": {
+        "simulator_version": "0.3.0"
+      },
+      "supported_action_semantics": {
+        "turn_rad": [0.2617993877991494, 0.5235987755982988]
+      }
+    }
+  },
+  "metrics": [
+    "socialnav_standard"
+  ],
+  "failure_policy": {
+    "policy_error": "diagnostic_only",
+    "infrastructure_error": "diagnostic_only"
+  },
+  "validation": {
+    "level": "unverified"
+  }
+}

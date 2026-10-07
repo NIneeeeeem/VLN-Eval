@@ -23,7 +23,7 @@ Responsibility boundaries per plugin kind:
 |---|---|---|
 | method | `extensions/methods/<id>/` | the full algorithm state: prompt, preprocessing, history, maps, action queue |
 | simulator | `extensions/simulators/<id>/` | SDK lifecycle, native actions and geometry |
-| benchmark | `extensions/benchmarks/<id>/` | data, task config, public observations, action translation, termination and evidence |
+| benchmark | `extensions/benchmarks/<task>/<id>/` | data, task config, public observations, action translation, termination and evidence |
 | metric | `extensions/metrics/<id>/` | offline scoring that only reads committed evidence |
 | controller | `extensions/controllers/<id>/` or external `plugin_dirs` | stateless action conversion |
 
@@ -54,12 +54,13 @@ Example manifest:
   "settings": [],
   "defaults": {},
   "capabilities": {
+    "accepts_goals": ["language"],
     "requires_sensors": ["rgb"],
     "emits_actions": ["primitive", "stop"]
   },
   "requires": {
     "gpu": true,
-    "paths": ["checkpoint", "repo_path"]
+    "paths": ["checkpoint"]
   },
   "validation": {"level": "unverified"}
 }
@@ -68,6 +69,69 @@ Example manifest:
 `adapter.py` exposes `create(config)` and returns a service implementing
 `call(operation, payload)`. Model dependencies must be imported lazily inside the factory
 or `prepare()`, so that manifest discovery never loads Torch, Transformers or a simulator.
+
+Keep method inference implementations inside the bundle's `runtime/` package,
+using qualified or relative imports. Built-in methods do not accept `repo_path`
+or modify `sys.path`; users only supply model assets and dependency environments.
+
+Related methods may share pure helpers in `extensions/methods/shared/<family>/`,
+while keeping model classes, registration, conversation templates and episode state
+inside their own bundles. Existing runtime import paths can re-export shared functions.
+Declare these directories with `"code_dependencies": ["../shared/image_io", "../shared/vila"]`.
+Each entry must name a unique, existing direct child of the sibling `shared/` directory;
+absolute paths, traversal and symlinks are rejected. Discovery reads metadata without
+importing helpers. The declared directories and optional `shared/__init__.py` contribute
+to the consumer's bundle digest, including provenance and notices. External Docker
+bundles copy these dependencies alongside the bundle. Undeclared sibling families do
+not affect that digest; run-resume still checks the project's global source identity.
+
+`code_dependencies` declares fingerprints and file transport; Python module resolution
+follows the plugin's existing import contract. Built-in helpers use qualified
+`extensions.methods.shared.*` imports. External file entrypoints should use installed
+qualified packages or explicit file loading rooted at `__file__`, for example
+`runpy.run_path(str(Path(__file__).parent.parent / "shared/family/helper.py"))`.
+That relative layout is preserved when Docker copies the external bundle. Declaring a
+directory alone does not make an unqualified `shared.*` module importable.
+
+Declare optional filesystem settings (for example `vision_tower` or `base_vlm`) in
+`resource_paths`; do not duplicate them in `resource_settings`. Required paths belong in
+`requires.paths`. `resource_settings` remains for legacy non-path deployment settings.
+Host paths are frozen before a worker changes directories;
+Docker paths remain container-relative. Declared method paths also participate
+in resource hashing, so replacing an auxiliary model invalidates resume.
+Declare additional files read implicitly by an upstream loader using
+`resource_companions`, for example
+`"resource_companions": {"checkpoint": ["../config.yaml", "../dataset_statistics.json"]}`.
+Names are relative to a file resource's parent (or to a directory resource itself);
+these exact files are required and hashed regardless of extension. YAML files
+also participate in directory fingerprints. Unlisted external dependencies are
+not covered automatically; preserve and declare them when adding a method.
+
+Simulator manifests declare import probes with `requires.modules`; a benchmark
+binding may add registration modules in its own `requires.modules`. Smoke checks
+read these declarations instead of branching on plugin IDs. Set
+`requires.main_thread: true` for simulators with a main-thread event loop: run them
+through isolated workers, not inline smoke. GPU backends must set `requires.gpu`.
+
+For optional actions, a binding can declare
+`"action_requirements": {"camera_tilt": {"allow_tilt": true}}`. Planning freezes
+the enabled action set from benchmark settings and uses it for both capability
+negotiation and live validation. A method requiring tilt must explicitly enable
+`benchmark_settings.allow_tilt`; otherwise planning fails before model loading.
+
+Register an external runtime with its discovery directory, then retain that directory in
+the experiment's `plugin_dirs`; `configure` records only the local interpreter/assets,
+while `plugin_dirs` makes the bundle portable at plan and worker time:
+
+```bash
+python -B -m nav_eval configure --plugin-dir /opt/vendor/nav-plugin --method vendor-method \
+  --method-path auxiliary_model=/models/vendor-aux
+python -B -m nav_eval configure --plugin-dir /opt/vendor/nav-plugin --simulator vendor-sim
+```
+
+External bundles are also supported by `benchmarks smoke --plugin-dir <directory>` and
+`matrix --plugin-dir <directory> --track native`. A frozen plan includes only the method
+and simulator selected by that experiment, never unrelated local runtime inventory.
 
 Method service operations:
 
@@ -170,18 +234,21 @@ see the next section.
 
 ## Add a benchmark
 
-Create `extensions/benchmarks/<id>/` with a manifest, binding implementations and dataset
+Create `extensions/benchmarks/<task>/<id>/` with a manifest, binding implementations and dataset
 registration:
 
 ```text
-extensions/benchmarks/<id>/
+extensions/benchmarks/<task>/<id>/
 ├── manifest.json
 ├── dataset.py           # dataset registration (if needed)
 └── bindings/
     └── <simulator_id>.py
 ```
 
-Example manifest (excerpt from `extensions/benchmarks/r2r_ce/manifest.json`):
+Choose a task family from the [benchmark extension guide](benchmark-extensions.md).
+Keep benchmark IDs independent of the directory; shared helpers belong in `shared/`.
+
+Example manifest (excerpt from `extensions/benchmarks/vln/r2r_ce/manifest.json`):
 
 ```json
 {
@@ -196,7 +263,7 @@ Example manifest (excerpt from `extensions/benchmarks/r2r_ce/manifest.json`):
   "observation": {"width": 640, "height": 480, "hfov": 90},
   "bindings": {
     "habitat030": {
-      "entrypoint": "extensions.benchmarks.my_benchmark.bindings.habitat:create",
+      "entrypoint": "extensions.benchmarks.vln.my_benchmark.bindings.habitat:create",
       "accepts_actions": ["primitive", "stop"],
       "capture_schema": "habitat-r2r-evidence/1",
       "provides_evidence": [
@@ -234,9 +301,9 @@ close_episode`. `finish` returns the execution record and evidence and does not 
 metrics during collection. `asset_files()` must list the data, scenes and NavMesh actually
 used; `runtime_identity()` may record the SDK build.
 
-Reference implementations: the Habitat binding in `extensions/benchmarks/r2r_ce/bindings`,
-the RxR dataset registration in `extensions/benchmarks/rxr_ce/dataset.py`, and the Isaac
-binding in `extensions/benchmarks/vlnverse/bindings`.
+Reference implementations: the Habitat binding in `extensions/benchmarks/vln/r2r_ce/bindings`,
+the RxR dataset registration in `extensions/benchmarks/vln/rxr_ce/dataset.py`, and the Isaac
+binding in `extensions/benchmarks/vln/vlnverse/bindings`.
 
 ## Add a metric
 
@@ -261,10 +328,10 @@ A metric manifest declares `requires_evidence` and a versioned `metric_set`:
 }
 ```
 
-Metrics only read committed evidence; missing fields return unavailable. A new metric can
-re-score existing trajectories but must never fabricate evidence that was not collected.
-When geodesic distances are unavailable, null and the reason are stored and metrics
-depending on that evidence return unavailable — they never degrade to Euclidean scores.
+Metrics read committed evidence only; missing fields return unavailable. A new metric can
+re-score existing trajectories from the stored evidence. When geodesic distances are
+unavailable, null and the reason are stored and metrics depending on that evidence return
+unavailable rather than degrading to Euclidean scores.
 
 Reference implementations: `extensions/metrics/r2r_ce_standard` and
 `extensions/metrics/vlnverse_standard`.
@@ -304,5 +371,5 @@ separately via the resource map and `asset_files()`.
    reset/act/step/finish flow.
 5. Offline scorer comparison: evidence fields are correctly consumed by the metric set.
 
-Claiming paper-level reproduction additionally requires certified runs on the full split;
-the manifest's `validation.level` must state it honestly.
+Paper-level reproduction additionally requires certified runs on the full split — record
+that tier in the manifest's `validation.level`.

@@ -14,6 +14,7 @@
     ]
   },
   "requires": {
+    "modules": ["habitat","habitat_sim"],
     "gpu": true,
     "paths": [
       "data_root"
@@ -23,4 +24,3 @@
     "level": "unverified"
   }
 }
-

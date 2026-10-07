@@ -1,0 +1,14 @@
+{
+  "benchmark": "multion",
+  "simulator": "habitat030",
+  "benchmark_settings": {
+    "repo_root": ".",
+    "task_config": "configs/benchmarks/tasks/multion_hssd.yaml",
+    "dataset_path": "data/datasets/minival/minival.json.gz",
+    "asset_paths": ["data/scene_datasets/fphab"]
+  },
+  "environment": {"settings": {"data_root": "data"},
+    "cwd": ".",
+    "pythonpath": ["."]
+  }
+}

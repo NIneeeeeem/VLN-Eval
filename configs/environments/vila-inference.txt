@@ -1,0 +1,6 @@
+# NaVILA / AwareVLN; Python >=3.10. Install CUDA-matched torch,
+# torchvision and flash-attn separately. Both VLM forks are bundled.
+-r navid-inference.txt
+decord==0.6.0
+loguru==0.7.3
+opencv-python==4.8.0.74

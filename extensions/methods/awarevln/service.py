@@ -1,7 +1,7 @@
 """AwareVLN method service: reasoning/action dual-mode VLM policy.
 
-Wraps an upstream AwareVLN checkout (https://github.com/GWxuan/AwareVLN,
-passed via the resource map's repo_path) behind the nav-eval method contract.
+Wraps an AwareVLN checkpoint (https://github.com/GWxuan/AwareVLN)
+using the bundled inference implementation behind the nav-eval method contract.
 
 Adapter parity: model loading (llava.model.builder.load_pretrained_model),
 sample_and_pad_images (8 frames, 512x512, black left-pad), llama_3 conversation
@@ -20,7 +20,7 @@ from __future__ import annotations
 import re
 import time
 
-from nav_eval.contracts import ContractError, SCHEMA_VERSION, validate_observation
+from nav_eval.contracts import SCHEMA_VERSION, ContractError, validate_observation
 from nav_eval.tensorcode import decode_tensor
 
 REASON_TOKEN_STR = "<BEGIN_OF_REASONING>"
@@ -93,9 +93,8 @@ def expand_action(name, text):
 class AwareVLNMethodService:
     """requires rgb (512x512 hfov 90); emits single primitive/stop per decision."""
 
-    def __init__(self, checkpoint, repo_path):
+    def __init__(self, checkpoint):
         self.checkpoint = checkpoint
-        self.repo_path = repo_path
         self.model = None
         self.sessions = {}
         self.phases = {"preprocess_s": 0.0, "generate_s": 0.0, "generation_calls": 0}
@@ -104,20 +103,15 @@ class AwareVLNMethodService:
         if self.model is not None:
             return
         import os
-        import sys
-
-        if not os.path.isdir(self.checkpoint):
-            raise ContractError(f"AwareVLN checkpoint directory not found: {self.checkpoint}")
-        if not os.path.isdir(self.repo_path):
-            raise ContractError(f"AwareVLN repository not found: {self.repo_path}")
-        if self.repo_path not in sys.path:
-            sys.path.insert(0, self.repo_path)
-
         import torch
-        from llava.constants import IMAGE_TOKEN_INDEX
-        from llava.conversation import SeparatorStyle, conv_templates
-        from llava.model.builder import load_pretrained_model
-        from llava.mm_utils import KeywordsStoppingCriteria, process_images, tokenizer_image_token
+        from .runtime.llava.constants import IMAGE_TOKEN_INDEX
+        from .runtime.llava.conversation import SeparatorStyle, conv_templates
+        from .runtime.llava.mm_utils import (
+            KeywordsStoppingCriteria,
+            process_images,
+            tokenizer_image_token,
+        )
+        from .runtime.llava.model.builder import load_pretrained_model
 
         model_name = os.path.basename(os.path.normpath(self.checkpoint))
         tokenizer, model, image_processor, _ = load_pretrained_model(self.checkpoint, model_name)

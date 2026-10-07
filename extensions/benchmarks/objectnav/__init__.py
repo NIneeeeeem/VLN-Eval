@@ -1,0 +1,1 @@
+"""Object-goal navigation benchmarks."""

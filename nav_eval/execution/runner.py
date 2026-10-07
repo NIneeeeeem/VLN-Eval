@@ -15,8 +15,14 @@ from nav_eval.execution.launchers import preflight
 from nav_eval.execution.pool import WorkerPool
 from nav_eval.planning import resolve
 from nav_eval.plugins import digest
-from nav_eval.storage import (AttemptStore, ROLLOUT_SCHEMA, file_digest, read_json,
-                              run_lock, write_json)
+from nav_eval.storage import (
+    ROLLOUT_SCHEMA,
+    AttemptStore,
+    file_digest,
+    read_json,
+    run_lock,
+    write_json,
+)
 
 
 def source_identity():
@@ -32,15 +38,23 @@ def resource_identity(resolved):
         settings = resolved[role]["resource"].get("settings", {})
         assets = {}
         # Dataset/scene fingerprints come from the environment's selected-asset attestation.
-        for key in ("checkpoint", "repo_path"):
+        path_keys = {"checkpoint"}
+        if role == "method":
+            path_keys.update(resolved[role].get("requires", {}).get("paths", []))
+            path_keys.update(resolved[role].get("resource_paths", []))
+        for key in sorted(path_keys):
             if not settings.get(key):
                 continue
             root = Path(settings[key])
             files = [root] if root.is_file() else sorted(p for p in root.rglob("*")
-                if p.is_file() and p.suffix in ({".json", ".safetensors", ".bin", ".model", ".pth", ".pt", ".txt", ".jinja"}
-                                               if key == "checkpoint" else {".py", ".json"})
+                if p.is_file() and p.suffix in {".py", ".json", ".yaml", ".yml", ".safetensors", ".bin", ".model", ".pth", ".pt", ".txt", ".jinja"}
                 and ".git" not in p.parts and "__pycache__" not in p.parts)
             assets[key] = digest({str(p.relative_to(root)) if root.is_dir() else p.name: file_digest(p) for p in files})
+            base = root if root.is_dir() else root.parent
+            for name in resolved[role].get("resource_companions", {}).get(key, []):
+                if Path(name).is_absolute():
+                    raise ValueError("resource companion paths must be relative to their resource")
+                assets[f"{key}:{name}"] = file_digest(base / name)
         identities[role] = assets
     return identities
 

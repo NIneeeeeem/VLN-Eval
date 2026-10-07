@@ -2,20 +2,13 @@
 from __future__ import annotations
 
 import math
-from typing import Any, Protocol
+from typing import Any
 
 from nav_eval.contracts import finite_number
 
 
 class MissingEvidence(ValueError):
     pass
-
-
-class MetricPlugin(Protocol):
-    name: str
-    required_fields: tuple[str, ...]
-
-    def compute(self, record: dict, evidence: dict, parameters: dict) -> float: ...
 
 
 def field_at(evidence: dict, path: str) -> Any:
@@ -113,6 +106,78 @@ class R2RCESPL:
         if geodesic <= 0:
             raise ValueError("geodesic_start_to_goal_m must be positive")
         return geodesic / max(path_length, geodesic)
+
+
+# --- ObjectNav metrics (evidence schema habitat-objectnav-evidence/1) ----------
+# Definitions follow the official habitat ObjectNav protocol: SR requires a
+# STOP with the final view-point geodesic distance below the success radius;
+# SPL discounts success by the ratio of start distance to travelled path
+# length; SoftSPL replaces the boolean success with max(0, 1 - d_final/d_start)
+# exactly as habitat's SoftSPL measure. All inputs come from captured
+# evaluator evidence, never from policy-visible data.
+
+
+class ObjectNavSuccess(R2RCESuccess):
+    name = "objectnav.success"
+
+
+class ObjectNavNE(R2RCENE):
+    name = "objectnav.ne_m"
+
+
+class ObjectNavOracleSuccess(R2RCEOracleSuccess):
+    name = "objectnav.oracle_success"
+
+
+class ObjectNavSPL(R2RCESPL):
+    name = "objectnav.spl"
+
+
+class ObjectNavSoftSPL:
+    name = "objectnav.soft_spl"
+    required_fields = ("trajectory.goal_distances_m", "trajectory.positions_xyz_m",
+                       "reference.geodesic_start_to_goal_m")
+
+    def compute(self, record, evidence, parameters):
+        distances = field_at(evidence, "trajectory.goal_distances_m")
+        if not distances:
+            raise MissingEvidence("trajectory has no distance samples")
+        geodesic = finite_number(field_at(evidence, "reference.geodesic_start_to_goal_m"),
+                                 "geodesic_start_to_goal_m")
+        if geodesic <= 0:
+            raise ValueError("geodesic_start_to_goal_m must be positive")
+        positions = field_at(evidence, "trajectory.positions_xyz_m")
+        path_length = sum(math.dist(a, b) for a, b in zip(positions, positions[1:]))
+        soft_success = max(0.0, 1.0 - distances[-1] / geodesic)
+        return soft_success * (geodesic / max(geodesic, path_length))
+
+
+# --- SocialNav metrics (evidence schema habitat-socialnav-evidence/1) ----------
+# Position-based protocol on the captured robot-to-human DistToGoal evidence:
+# SR requires a STOP with the final distance below the success radius, SPL and
+# SoftSPL follow the same habitat formulas as ObjectNav. The upstream
+# nav_seek_success measure (which additionally requires facing the human) is
+# recorded in the evidence parity layer, not recomputed here.
+
+
+class SocialNavSuccess(ObjectNavSuccess):
+    name = "socialnav.success"
+
+
+class SocialNavNE(ObjectNavNE):
+    name = "socialnav.ne_m"
+
+
+class SocialNavOracleSuccess(ObjectNavOracleSuccess):
+    name = "socialnav.oracle_success"
+
+
+class SocialNavSPL(ObjectNavSPL):
+    name = "socialnav.spl"
+
+
+class SocialNavSoftSPL(ObjectNavSoftSPL):
+    name = "socialnav.soft_spl"
 
 
 # --- VLNVerse metrics (evidence schema vlnverse-evidence/1) ------------------

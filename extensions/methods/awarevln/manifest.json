@@ -12,6 +12,9 @@
     "hfov": 90
   },
   "capabilities": {
+    "accepts_goals": [
+      "language"
+    ],
     "requires_sensors": [
       "rgb"
     ],
@@ -27,11 +30,14 @@
   "requires": {
     "gpu": true,
     "paths": [
-      "checkpoint",
-      "repo_path"
+      "checkpoint"
     ]
   },
   "validation": {
     "level": "unverified"
-  }
+  },
+  "code_dependencies": [
+    "../shared/image_io",
+    "../shared/vila"
+  ]
 }

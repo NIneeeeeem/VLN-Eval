@@ -16,6 +16,7 @@ from copy import deepcopy
 from pathlib import Path
 
 from nav_eval.contracts import ContractError
+from nav_eval.plugins import Plugin
 from nav_eval.storage import write_json
 from nav_eval.transport import HTTPClient, LocalClient
 
@@ -57,7 +58,7 @@ def _preflight_replica(resolved, gpu_devices, reservations, index):
         resource = resolved[role]["resource"]
         for key in required.get("paths", []):
             if not settings.get(key) or not Path(settings[key]).exists():
-                raise ValueError(f"{role}: missing resource {key}; set resources.{role}.settings.{key}")
+                raise ValueError(f"{role}: missing registered asset {key}; update configs/local.json using nav_eval configure")
         if launcher == "python":
             python = resource.get("python", sys.executable)
             if not Path(python).is_file() and not shutil.which(python):
@@ -70,7 +71,7 @@ def _preflight_replica(resolved, gpu_devices, reservations, index):
                 raise ValueError(f"{role}: docker image must be pinned by SHA256 digest")
         if required.get("gpu"):
             if "gpu" not in resource:
-                raise ValueError(f"{role}: explicitly select a physical GPU in the resource map")
+                raise ValueError(f"{role}: select a physical GPU with --gpu or --gpus")
             gpu = str(resource["gpu"])
             if not gpu or "," in gpu or isinstance(resource["gpu"], bool):
                 raise ValueError(f"{role}: allocate exactly one physical GPU per worker")
@@ -166,10 +167,19 @@ def _docker_source(config, root, role):
         if bundle.is_relative_to(SOURCE_ROOT / "extensions"):
             spec["root"] = str(Path("/opt/nav-eval") / bundle.relative_to(SOURCE_ROOT))
         else:
+            dependencies = Plugin(spec, bundle).code_dependencies()
             destination = source / "external" / label
+            if dependencies:
+                destination /= "bundle"
             shutil.copytree(bundle, destination, dirs_exist_ok=True,
                             ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
-            spec["root"] = "/opt/nav-eval/external/" + label
+            for dependency in dependencies:
+                shutil.copytree(dependency, destination.parent / "shared" / dependency.name,
+                                dirs_exist_ok=True, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+            initializer = bundle.parent / "shared/__init__.py"
+            if dependencies and initializer.is_file():
+                shutil.copy2(initializer, destination.parent / "shared/__init__.py")
+            spec["root"] = str(Path("/opt/nav-eval") / destination.relative_to(source))
     return source
 
 

@@ -7,11 +7,30 @@ import importlib.util
 import json
 import re
 import sys
+from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 
 KINDS = {"simulator", "benchmark", "method", "metric", "controller"}
 SCHEMA = "nav-eval-plugin/1"
+
+
+def resource_path_keys(manifest):
+    """Required and optional asset paths share one deployment contract."""
+    return set(manifest.get("requires", {}).get("paths", [])) | set(manifest.get("resource_paths", []))
+
+
+def resource_setting_keys(manifest):
+    return resource_path_keys(manifest) | set(manifest.get("resource_settings", []))
+
+
+def configured_binding(binding, settings):
+    """Freeze optional actions from declared task settings before negotiation."""
+    result = deepcopy(binding)
+    gates = result.get("action_requirements", {})
+    result["accepts_actions"] = [action for action in result["accepts_actions"]
+        if all(settings.get(key) == value for key, value in gates.get(action, {}).items())]
+    return result
 
 
 def digest(value):
@@ -57,12 +76,39 @@ class Plugin:
         return load_entrypoint(entrypoint, self.root)
 
     def identity(self):
-        files = {}
-        for path in sorted(self.root.rglob("*")):
-            if path.is_file() and path.suffix in {".py", ".json"} and "__pycache__" not in path.parts:
-                files[str(path.relative_to(self.root))] = hashlib.sha256(path.read_bytes()).hexdigest()
+        trees = {"bundle": {}, "dependencies": {}}
+        dependencies = self.code_dependencies()
+        initializer = self.root.parent / "shared/__init__.py"
+        if dependencies:
+            trees["shared_initializer"] = hashlib.sha256(initializer.read_bytes()).hexdigest() if initializer.is_file() else None
+        roots = [(None, self.root)] + [(path.name, path) for path in dependencies]
+        for name, root in roots:
+            files = trees["bundle"] if name is None else trees["dependencies"].setdefault(name, {})
+            for path in sorted(root.rglob("*")):
+                if path.is_file() and "__pycache__" not in path.parts and path.suffix != ".pyc":
+                    if name is not None or path.suffix in {".py", ".json", ".yaml", ".yml", ".jinja"}:
+                        files[path.relative_to(root).as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
         return {"kind": self.manifest["kind"], "id": self.manifest["id"],
-                "version": self.manifest["version"], "bundle_sha256": digest(files)}
+                "version": self.manifest["version"], "bundle_sha256": digest(trees if dependencies else trees["bundle"])}
+
+    def code_dependencies(self):
+        """Declared sibling helper directories; inspect bytes without importing code."""
+        names = self.manifest.get("code_dependencies", [])
+        if not isinstance(names, list) or any(not isinstance(name, str) or
+                not re.fullmatch(r"\.\./shared/[a-zA-Z0-9_][a-zA-Z0-9_.-]*", name) for name in names):
+            raise ValueError("code_dependencies must be a list of ../shared/<name> paths")
+        if len(set(names)) != len(names):
+            raise ValueError("duplicate code_dependencies")
+        shared = self.root.parent / "shared"
+        paths = []
+        for name in names:
+            path = self.root / name
+            if (shared.is_symlink() or (shared / "__init__.py").is_symlink() or path.is_symlink() or not path.is_dir()
+                    or path.resolve().parent != shared.resolve()
+                    or any(item.is_symlink() for item in path.rglob("*"))):
+                raise ValueError(f"invalid shared code directory: {name}")
+            paths.append(path.resolve())
+        return paths
 
 
 class Registry:
@@ -88,7 +134,9 @@ class Registry:
                 key = item["kind"], item["id"]
                 if key in self.entries:
                     raise ValueError(f"duplicate plugin: {key}")
-                self.entries[key] = Plugin(item, path.parent)
+                plugin = Plugin(item, path.parent)
+                plugin.code_dependencies()
+                self.entries[key] = plugin
 
     def get(self, kind, plugin_id):
         try:

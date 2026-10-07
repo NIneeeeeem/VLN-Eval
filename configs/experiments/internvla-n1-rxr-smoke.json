@@ -1,0 +1,7 @@
+{
+  "schema_version": "nav-eval-experiment/1",
+  "benchmark": "rxr_ce", "simulator": "habitat030", "method": "internvla-n1",
+  "track": "native", "launcher": "python", "transport": "binary",
+  "benchmark_settings": {"benchmark_id": "rxr_val_unseen", "languages": ["en-IN", "en-US"], "allow_tilt": true},
+  "episode_limit": 10, "seed": 0, "claim": "diagnostic"
+}

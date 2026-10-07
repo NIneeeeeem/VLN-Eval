@@ -9,11 +9,13 @@
   },
   "capabilities": {
     "offers_sensors": [
-      "rgb",
-      "depth"
+      "depth",
+      "pose",
+      "rgb"
     ]
   },
   "requires": {
+    "modules": ["habitat","habitat_sim"],
     "gpu": true,
     "paths": [
       "data_root"

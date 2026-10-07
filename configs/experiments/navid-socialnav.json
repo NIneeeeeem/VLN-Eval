@@ -1,0 +1,7 @@
+{
+  "schema_version": "nav-eval-experiment/1",
+  "benchmark": "hssd_socialnav", "simulator": "habitat030", "method": "navid",
+  "track": "native", "launcher": "python", "transport": "binary",
+  "benchmark_settings": {"benchmark_id": "socialnav_hssd_val"},
+  "episode_limit": 2, "seed": 0, "claim": "diagnostic"
+}

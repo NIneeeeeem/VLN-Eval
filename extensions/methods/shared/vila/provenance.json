@@ -1,0 +1,26 @@
+{
+  "implementation_origin": "awarevln",
+  "modifications": "Selected function bodies relocated unchanged; old method modules re-export them.",
+  "origins": [
+    {
+      "method": "awarevln",
+      "source": "https://github.com/GWxuan/AwareVLN",
+      "revision": "8f14eb8450cdd14ff4e3ba1ea04824255121e6be",
+      "license_note": "See notices/ and retained source headers; the Nav-Eval root license does not override upstream terms.",
+      "original_file": "llava/mm_utils.py",
+      "function_sha256": {
+        "expand2square": "23144d57281ac4904d8bdc52be0c9686a7a64d8a201427358e8bd1fa45ab4189"
+      }
+    },
+    {
+      "method": "navila",
+      "source": "https://github.com/AnjieCheng/NaVILA",
+      "revision": "76b98f233dd0fff05dfcd69435eec6740febff9d",
+      "license_note": "See notices/ and retained source headers; the Nav-Eval root license does not override upstream terms.",
+      "original_file": "llava/mm_utils.py",
+      "function_sha256": {
+        "expand2square": "23144d57281ac4904d8bdc52be0c9686a7a64d8a201427358e8bd1fa45ab4189"
+      }
+    }
+  ]
+}

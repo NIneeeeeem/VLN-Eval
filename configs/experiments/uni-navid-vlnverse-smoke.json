@@ -1,0 +1,22 @@
+{
+  "schema_version": "nav-eval-experiment/1",
+  "benchmark": "vlnverse",
+  "simulator": "isaacsim500",
+  "method": "uni_navid",
+  "track": "native",
+  "launcher": "python",
+  "transport": "binary",
+  "benchmark_settings": {
+    "benchmark_id": "vlnverse_fine_val_unseen",
+    "max_control_steps": 4
+  },
+  "episode_limit": 1,
+  "seed": 0,
+  "claim": "diagnostic",
+  "observation": {
+    "hfov": 90
+  },
+  "episodes": [
+    "kujiale_0020_0_0"
+  ]
+}

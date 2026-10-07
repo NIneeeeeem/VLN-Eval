@@ -1,16 +1,23 @@
 #!/usr/bin/env bash
-# Offline scoring is selected by the frozen run, not by a new model config.
+# Evaluate a Bash-selected model/benchmark, or rescore a collected run.
 set -euo pipefail
 
 if [[ ${1:-} == --help || ${1:-} == -h ]]; then
     echo 'Usage: bash scripts/eval.sh RUN_DIR [--metric-set FILE] [--plugin-dir DIR ...]'
+    echo 'Or: METHOD=streamvln BENCHMARK=r2r_ce GPU=0 bash scripts/eval.sh'
+    echo 'MODE=plan resolves the pair without starting models or simulators.'
     echo 'RUN_DIR must contain run.json; use the actual <run-id>, not its parent.'
     echo 'Works for any collected method/benchmark; PYTHON selects the control-plane interpreter.'
     exit 0
 fi
 if (( $# == 0 )); then
-    echo 'Usage: bash scripts/eval.sh RUN_DIR [evaluate options]' >&2
-    exit 2
+    : "${METHOD:?Set METHOD to the model plugin, e.g. streamvln}"
+    : "${BENCHMARK:?Set BENCHMARK to the benchmark plugin, e.g. r2r_ce}"
+    NAV_EVAL_BENCH_ID=$BENCHMARK
+    source "$(dirname -- "${BASH_SOURCE[0]}")/common.sh"
+    NAV_EVAL_BENCH_TAG=$(nav_eval_bench_tag "$BENCHMARK")
+    nav_eval_entry
+    exit 0
 fi
 repo_root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 run_dir=$(realpath -e -- "$1")

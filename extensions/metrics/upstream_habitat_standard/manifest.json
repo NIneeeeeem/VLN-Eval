@@ -1,0 +1,8 @@
+{
+  "schema_version":"nav-eval-plugin/1", "kind":"metric", "id":"upstream_habitat_standard", "version":"1",
+  "requires_evidence":["upstream_metrics_by_tick"],
+  "metric_set":{"schema_version":"nav-eval-metric-set/0.1", "id":"upstream_habitat_standard", "evidence_schema":"upstream-habitat-captured-metrics/1", "metrics":[
+    {"entrypoint":"extensions.metrics.upstream_habitat_standard:CapturedUpstreamSuccess"},
+    {"entrypoint":"extensions.metrics.upstream_habitat_standard:CapturedUpstreamSPL"}
+  ]}
+}

@@ -21,7 +21,7 @@ manifest 必须包含 `schema_version: nav-eval-plugin/1`、`kind`、`id` 和字
 |---|---|---|
 | method | `extensions/methods/<id>/` | 完整算法状态：prompt、预处理、历史、地图、动作队列 |
 | simulator | `extensions/simulators/<id>/` | SDK 生命周期、原生动作和几何 |
-| benchmark | `extensions/benchmarks/<id>/` | 数据、任务配置、公开观测、动作翻译、终止和证据 |
+| benchmark | `extensions/benchmarks/<task>/<id>/` | 数据、任务配置、公开观测、动作翻译、终止和证据 |
 | metric | `extensions/metrics/<id>/` | 只读取已提交证据的离线评分 |
 | controller | `extensions/controllers/<id>/` 或外部 `plugin_dirs` | 无状态动作转换 |
 
@@ -57,7 +57,7 @@ manifest 示例：
   },
   "requires": {
     "gpu": true,
-    "paths": ["checkpoint", "repo_path"]
+    "paths": ["checkpoint"]
   },
   "validation": {"level": "unverified"}
 }
@@ -66,6 +66,59 @@ manifest 示例：
 `adapter.py` 暴露 `create(config)`，返回实现 `call(operation, payload)` 的 service。
 模型依赖必须延迟到 factory 或 `prepare()` 导入，保证 manifest discovery 不加载 Torch、
 Transformers 或仿真器。
+
+方法推理实现放入 bundle 的 `runtime/` 包，使用完整包名或相对导入。
+内置方法不接受 `repo_path`，不修改 `sys.path`；用户只需提供模型资产和依赖环境。
+
+同源方法可以在 `extensions/methods/shared/<family>/` 共享纯工具函数，模型类、
+注册逻辑、对话模板和 episode 状态仍保留在各自 bundle 中。原 runtime 导入入口
+可以直接重导出共享函数。用 `"code_dependencies": ["../shared/image_io", "../shared/vila"]`
+声明目录；每项必须是同级 `shared/` 下唯一且存在的直接子目录，拒绝绝对路径、
+路径逃逸和符号链接。发现阶段只读元数据，不导入工具模块。声明目录及可选的
+`shared/__init__.py` 参与使用方的 bundle 摘要，包含来源记录和许可证说明。
+外部 Docker bundle 会一并复制声明的共享目录。未声明的同级工具目录不影响
+该插件摘要；运行恢复仍校验项目的全局源码身份。
+
+`code_dependencies` 声明指纹和文件传输，Python 模块解析沿用插件原有的导入约定。
+内置工具使用 `extensions.methods.shared.*` 完整包名；外部文件入口使用已安装的
+完整包名，或基于 `__file__` 显式加载文件，例如
+`runpy.run_path(str(Path(__file__).parent.parent / "shared/family/helper.py"))`。
+Docker 复制外部 bundle 时保留这一相对布局。只声明目录不会使未限定包名的
+`shared.*` 自动可导入。
+
+可选的文件系统设置（如 `vision_tower`、`base_vlm`）只放入 `resource_paths`，不要在
+`resource_settings` 中重复声明；必需路径放入 `requires.paths`。`resource_settings`
+保留给旧的非路径部署设置。宿主机路径在 worker 切换目录
+前固定为绝对路径，Docker 路径保留容器语义。声明的方法路径也参与资源指纹计算，
+替换辅助模型会使旧的 resume 资源锁失效。
+上游 loader 隐式读取的其他文件用 `resource_companions` 声明，例如
+`"resource_companions": {"checkpoint": ["../config.yaml", "../dataset_statistics.json"]}`。
+路径相对文件资源的父目录（目录资源则相对该目录本身）；这些文件必须存在，
+且不受扩展名过滤地参与指纹。目录指纹也包含 YAML。未声明的外部依赖不会自动
+被锁定，接入新方法时需要完整保留并声明。
+
+仿真器 manifest 通过 `requires.modules` 声明依赖探针，benchmark binding 可以用
+同名字段补充任务注册模块；smoke 不再按插件 ID 硬编码依赖。有主线程事件循环的
+仿真器声明 `requires.main_thread: true`，通过独立 worker 运行；内联 smoke 会明确
+拒绝这类后端。GPU 后端应声明 `requires.gpu`。
+
+可选动作使用 binding 的
+`"action_requirements": {"camera_tilt": {"allow_tilt": true}}` 声明。
+规划阶段按 benchmark settings 固定实际启用的动作集合，用于兼容性检查和运行时
+校验。需要抬头/低头的方法必须显式启用 `benchmark_settings.allow_tilt`。
+
+注册外部运行时时带上发现目录，并在实验的 `plugin_dirs` 中保留该目录；`configure`
+只记录本机解释器和资产，而 `plugin_dirs` 使 bundle 在 plan 和 worker 阶段可移植：
+
+```bash
+python -B -m nav_eval configure --plugin-dir /opt/vendor/nav-plugin --method vendor-method \
+  --method-path auxiliary_model=/models/vendor-aux
+python -B -m nav_eval configure --plugin-dir /opt/vendor/nav-plugin --simulator vendor-sim
+```
+
+外部插件也可通过 `benchmarks smoke --plugin-dir <directory>` 和
+`matrix --plugin-dir <directory> --track native` 检查。冻结计划只包含该实验选中的
+method 和 simulator，不包含无关的本机运行时库存。
 
 方法 service 操作：
 
@@ -155,17 +208,20 @@ manifest 示例（见 `extensions/simulators/habitat030/manifest.json`）：
 
 ## 添加 Benchmark
 
-创建 `extensions/benchmarks/<id>/`，包含 manifest、binding 实现和数据注册：
+创建 `extensions/benchmarks/<task>/<id>/`，包含 manifest、binding 实现和数据注册：
 
 ```text
-extensions/benchmarks/<id>/
+extensions/benchmarks/<task>/<id>/
 ├── manifest.json
 ├── dataset.py           # 数据集注册（如需要）
 └── bindings/
     └── <simulator_id>.py
 ```
 
-manifest 示例（节选自 `extensions/benchmarks/r2r_ce/manifest.json`）：
+按[benchmark 扩展指南](benchmark-extensions.md)选择 task 类型。
+benchmark ID 不包含目录层级；公共实现放入 `shared/`。
+
+manifest 示例（节选自 `extensions/benchmarks/vln/r2r_ce/manifest.json`）：
 
 ```json
 {
@@ -180,7 +236,7 @@ manifest 示例（节选自 `extensions/benchmarks/r2r_ce/manifest.json`）：
   "observation": {"width": 640, "height": 480, "hfov": 90},
   "bindings": {
     "habitat030": {
-      "entrypoint": "extensions.benchmarks.my_benchmark.bindings.habitat:create",
+      "entrypoint": "extensions.benchmarks.vln.my_benchmark.bindings.habitat:create",
       "accepts_actions": ["primitive", "stop"],
       "capture_schema": "habitat-r2r-evidence/1",
       "provides_evidence": [
@@ -213,9 +269,9 @@ benchmark service 提供 `describe / episodes / reset / step / finish / close_ep
 `finish` 返回执行 record 与 evidence，不在采集阶段计算指标。`asset_files()` 必须列出
 实际使用的数据、场景和 NavMesh；`runtime_identity()` 可记录 SDK build。
 
-参考实现：Habitat binding 位于 `extensions/benchmarks/r2r_ce/bindings`，RxR 的数据集
-注册位于 `extensions/benchmarks/rxr_ce/dataset.py`，Isaac binding 位于
-`extensions/benchmarks/vlnverse/bindings`。
+参考实现：Habitat binding 位于 `extensions/benchmarks/vln/r2r_ce/bindings`，RxR 的数据集
+注册位于 `extensions/benchmarks/vln/rxr_ce/dataset.py`，Isaac binding 位于
+`extensions/benchmarks/vln/vlnverse/bindings`。
 
 ## 添加指标
 
@@ -240,9 +296,9 @@ metric manifest 声明 `requires_evidence` 与版本化 `metric_set`：
 }
 ```
 
-指标只读取已提交证据；字段缺失时返回 unavailable。新增指标可以重评已有轨迹，但不能
-补造未采集证据。测地距离不可用时保存 null 与原因，依赖该证据的指标返回
-unavailable，不会退化成欧氏分数。
+指标只读取已提交证据；字段缺失时返回 unavailable。新增指标可基于已存证据重评已有
+轨迹。测地距离不可用时保存 null 与原因，依赖该证据的指标返回 unavailable，而不是
+退化成欧氏分数。
 
 参考实现：`extensions/metrics/r2r_ce_standard`、`extensions/metrics/vlnverse_standard`。
 
@@ -275,4 +331,5 @@ Controller manifest 显式声明输入/输出动作。方法动作与 binding �
 4. 真实 episode 闭环：隔离 worker 完成 reset/act/step/finish 全流程。
 5. 离线 scorer 对照：证据字段能被指标集正确消费。
 
-宣称论文级复现还需要完整 split 的认证运行；manifest 的 `validation.level` 如实标注。
+论文级复现还需完整 split 的认证运行——把该层级记录在 manifest 的
+`validation.level` 中。

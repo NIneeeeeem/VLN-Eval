@@ -1,94 +1,215 @@
-# 资产获取:数据、权重与环境 / Asset Acquisition
+# Assets: Datasets, Scenes and Weights
 
-English summary: this repository ships **no datasets, scenes, weights or upstream
-source**. Everything below is fetched from the network and placed in local
-(git-ignored) directories, then wired into a run through a host resource map
-(`configs/resources/*.json`). Relative paths in resource maps resolve from the
-repository root, so run all commands from the repo root as the docs do.
+[简体中文](README.zh-CN.md) | English
 
-## 目录约定
+Nav-Eval ships code only — datasets, scenes and weights are downloaded from
+their official sources into local (git-ignored) directories. After the first
+download, register their paths once in `configs/local.json`; this page lists
+every download source and the exact target layout.
 
-所有资产放在仓库下这些目录(已被 `.gitignore` 排除,绝不入库),或资源映射指向的任何本地路径:
+Start with the fresh `nav_streamvln`, `nav_vlm` and `nav_habitat030` prefixes
+in the [installation guide](../README.md). Public evaluation downloads:
+
+```bash
+python -B scripts/download_assets.py objectnav instance_imagenav hm3d_ovon \
+  multion_mp3d multion_objects multion_hssd
+python -B scripts/download_hssd_scene.py --scene 102816036
+python -B scripts/download_assets.py goat_bench
+python -B scripts/download_goat_cache.py
+```
+
+Archives and URL/SHA256/file receipts live in `data/downloads/`. Downloads
+resume, extract only evaluation splits and preserve existing files. GOAT's
+Drive episodes and goal caches are separate from licensed HM3D scenes; see
+[specialized recipes](../configs/benchmarks/README.md). Failed downloads return
+nonzero. If the official Hugging Face endpoint is unreachable, prefix those
+commands with `HF_ENDPOINT=https://hf-mirror.com`; receipts record the endpoint.
+The HSSD helper fetches one complete real scene and all referenced objects,
+collision assets and semantic lexicon into `data/scene_datasets/fphab/`.
+Scene 102816036 contains five minival episodes; example YAMLs restrict the
+selection to it. Fetch other scenes with `--scene`, then remove `content_scenes`
+for full minival. SocialNav's humanoid/episode assets are separate.
+
+Specialized benchmarks (OVON, GOAT-Bench, MultiON, HSSD SocialNav assets) and
+model-free smoke checks have their own recipes in
+[configs/benchmarks/README.md](../configs/benchmarks/README.md).
+
+## Directory layout
+
+All assets live under these git-ignored directories (or another local path
+registered with `nav_eval configure`). Relative paths resolve from the
+repository root:
 
 ```text
 data/
-├── datasets/r2r/{val_seen,val_unseen}/    # R2R-CE splits
-├── datasets/rxr/val_unseen/               # RxR-CE splits
-└── scene_datasets/mp3d/                   # MP3D 场景 (91 个, 约 21 GB)
-weights/<method>/                          # 方法 checkpoint
-source/<upstream>/                         # 上游方法源码 checkout
-envs/<name>/bin/python                     # 上游依赖环境的解释器
+├── datasets/r2r/{val_seen,val_unseen}/     # R2R-CE splits
+├── datasets/rxr/val_unseen/                # RxR-CE splits
+├── datasets/objectnav/{mp3d,hm3d}/         # ObjectNav splits
+└── scene_datasets/{mp3d,hm3d}/             # scene meshes + navmeshes
+checkpoints/<method>/                           # method checkpoints
 ```
 
-## 1. 数据集(全部来自上游官方发布)
+Method inference source is bundled. Prepare Python dependency environments and
+register their interpreters once with `nav_eval configure`.
 
-| 本地路径 | 内容 | 上游来源 |
+## 1. Episode datasets
+
+| Target path | Content | Source |
 |---|---|---|
-| `datasets/r2r/val_unseen/val_unseen.json.gz` | R2R-CE val_unseen 全集(1839 episodes / 11 场景) | [R2R-CE 官方发布](https://github.com/jkrishnavs/nav-habitat)(habitat 0.2.x 数据布局) |
-| `datasets/r2r/val_unseen/val_unseen_gt.json.gz` | 官方 GT reference(评测证据由 adapter 现场采集,GT 备用) | 同上 |
-| `datasets/r2r/val_seen/` | R2R-CE val_seen 全集(778 episodes / 53 场景) | 同上 |
-| `datasets/rxr/val_unseen/val_unseen_guide.json.gz` | RxR-CE val_unseen guide 全集(11006 episodes / 11 场景;en/hi/te 多语言) | [RxR-CE 官方发布](https://github.com/rvlab/rxr-ce) |
-| `datasets/rxr/val_unseen/val_unseen_guide_gt.json.gz` | RxR 官方 GT(nDTW 等备用) | 同上 |
-| `scene_datasets/mp3d/` | 全部 91 个 MP3D 场景,覆盖 R2R/RxR 全部 split | [habitat DATASETS.md](https://github.com/facebookresearch/habitat-sim/blob/main/DATASETS.md)(需签署 MP3D 许可后用官方脚本下载) |
+| `datasets/r2r/val_unseen/val_unseen.json.gz` | R2R-CE val_unseen — 1,839 episodes / 11 scenes | [R2R_VLNCE_v1-3](https://drive.google.com/file/d/1T9SjqZWyR2PCLSXYkFckfDeIs6Un0Rjm/view) ([nav-habitat](https://github.com/jkrishnavs/nav-habitat) layout) |
+| `datasets/r2r/val_seen/val_seen.json.gz` | R2R-CE val_seen — 778 episodes / 53 scenes | same archive |
+| `datasets/rxr/val_unseen/val_unseen_guide.json.gz` | RxR-CE val_unseen guide — 11,006 episodes / 11 scenes (en/hi/te) | [RxR_VLNCE_v0](https://drive.google.com/file/d/145xzLjxBaNTbVgBfQ8e9EsBAV8W-SM0t/view) ([rxr-ce](https://github.com/rvlab/rxr-ce)) |
+| `datasets/objectnav/mp3d/v1/val/val.json.gz` | ObjectNav MP3D v1 val — 2,195 episodes | [habitat CDN](https://dl.fbaipublicfiles.com/habitat/data/datasets/objectnav/m3d/v1/objectnav_mp3d_v1.zip) |
+| `datasets/objectnav/hm3d/v2/val/val.json.gz` | ObjectNav HM3D v2 val | [habitat CDN](https://dl.fbaipublicfiles.com/habitat/data/datasets/objectnav/hm3d/v2/objectnav_hm3d_v2.zip) |
+| `datasets/instance_imagenav/hm3d/v2/<split>/<split>.json.gz` | InstanceImageNav HM3D v2 (`val` / `val_mini`) + `content/*.json.gz` | [habitat CDN](https://dl.fbaipublicfiles.com/habitat/data/datasets/imagenav/hm3d/v2/instance_imagenav_hm3d_v2.zip) |
+| `datasets/ovon/hm3d/v1/val_seen/val_seen.json.gz` | OVON episodes and content shards | [official archive](https://huggingface.co/datasets/nyokoyama/hm3d_ovon/resolve/main/hm3d.tar.gz) |
+| `datasets/goat_bench/hm3d/v1/val_seen/val_seen.json.gz` | GOAT episodes | [official Drive archive](https://drive.google.com/file/d/1N0UbpXK3v7oTphC4LoDqlNeMHbrwkbPe/view) |
+| `datasets/multinav/3_ON/val/val.json.gz` | Original MP3D MultiON | [official archive](https://aspis.cmpt.sfu.ca/projects/multion/multinav.zip) |
+| `datasets/minival/minival.json.gz` | HSSD MultiON and content shards | [official minival](https://aspis.cmpt.sfu.ca/projects/langmon/minival) |
+| `objects/multion/` | MP3D MultiON goal cylinders | [official objects](https://aspis.cmpt.sfu.ca/projects/multion/objects.zip) |
+| `goat-assets/goal_cache/` | GOAT object/language/image embeddings | [official caches](https://huggingface.co/datasets/axel81/goat-bench) |
 
-R2R/RxR 按上游 release 的目录结构原样放置即可;MP3D 需先在
-[MP3D 官网](https://niessner.github.io/Matterport/) 签署许可,再用 habitat 页面提供的
-下载脚本获取 `mp3d` 场景目录。相同 MP3D 只存一份;split、许可与来源必须锁定。
+Extract each archive into a staging directory first, then copy the split
+folders to the target layout (avoid an extra archive-name level). The
+`*_gt.json.gz` companions are optional — scoring reads evidence captured by
+the binding, not GT files.
 
-RxR 的 habitat dataset 装载器(`RxR-VLN-CE-v1` 注册)逐字复制自 StreamVLN 仓库
-`streamvln/habitat_extensions/rxr_vln_dataset.py`,来源注明于
-`extensions/benchmarks/rxr_ce/dataset.py` 文件头。
+ObjectNav MP3D download and extraction (evaluation splits only):
 
-## 2. 方法权重(checkpoint)
+```bash
+python -B scripts/download_assets.py objectnav
+```
 
-| 方法 ID | 基座模型 | 上游代码(`repo_path` 指向它) | 权重来源 |
+Verify the frozen episode selection without loading a simulator — a
+`missing scenes` error lists the MP3D scenes still to fetch:
+
+```bash
+python -B -c "
+from pathlib import Path
+from extensions.benchmarks.vln.r2r_ce.dataset import select_episodes
+root = Path('data').resolve()
+print(len(select_episodes(root / 'datasets/r2r/val_unseen/val_unseen.json.gz', root)))
+"
+```
+
+## 2. Scenes
+
+### MP3D (R2R-CE, RxR-CE, ObjectNav MP3D)
+
+MP3D meshes are license-gated by Matterport:
+
+1. Accept the terms at <https://niessner.github.io/Matterport/> and get the
+   download script from
+   [habitat DATASETS.md](https://github.com/facebookresearch/habitat-sim/blob/main/DATASETS.md).
+2. Download scenes into `data/scene_datasets/mp3d/<scan>/<scan>.glb` (with
+   navmeshes `.navmesh` and, for semantic tasks, `.ply`/`.scn`).
+
+R2R val_unseen uses 11 scenes; the full 91-scene set (~21 GB) also covers
+val_seen, RxR and ObjectNav MP3D — store it once and share it across
+benchmarks. The VLN-CE [data guide](https://github.com/jacobkrantz/VLN-CE#data)
+describes the expected layout.
+
+### HM3D (ObjectNav HM3D, InstanceImageNav, OVON, GOAT)
+
+HM3D requires a Matterport research agreement:
+<https://matterport.com/habitat-matterport-3d-research-dataset>. Generate an
+API token at <https://my.matterport.com/settings/account/devtools>, then use
+the habitat-sim downloader from a habitat environment (token id = username,
+secret = password):
+
+```bash
+envs/nav_habitat030/bin/python -B -m habitat_sim.utils.datasets_download \
+  --username "$MATTERPORT_TOKEN_ID" --password "$MATTERPORT_TOKEN_SECRET" \
+  --uids hm3d_val_v0.2 --data-path data/
+```
+
+`hm3d_minival_v0.2` fetches the minival subset; `hm3d_train_v0.2` adds
+training scenes. HM3D semantic tasks need the version-matched semantic
+annotations, not only visual meshes. Keep tokens local — never in JSON or Git.
+
+### HSSD (SocialNav, MultiON HSSD)
+
+HSSD scenes are on HuggingFace ([hssd/hssd-hab](https://huggingface.co/datasets/hssd/hssd-hab),
+CC BY-NC 4.0); the HSSD SocialNav asset bundle is fetched with the
+habitat-sim downloader — see
+[HSSD SocialNav setup](../docs/benchmarks.md#social-navigation-hssd_socialnav).
+
+## 3. Model weights
+
+| Method | Base model | Reference implementation (bundled) | Weights |
 |---|---|---|---|
-| `streamvln` | LLaVA-Video | [InternRobotics/StreamVLN](https://github.com/InternRobotics/StreamVLN) | [mengwei0427/StreamVLN_Video_qwen_1_5_r2r_rxr_envdrop_scalevln](https://huggingface.co/mengwei0427/StreamVLN_Video_qwen_1_5_r2r_rxr_envdrop_scalevln)(benchmark 复现版 checkpoint) |
-| `navid` | 7B 视频 VLM | [jzhzhang/NaVid-VLN-CE](https://github.com/jzhzhang/NaVid-VLN-CE) | [Jzzhang/NaVid](https://huggingface.co/Jzzhang/NaVid) |
-| `uni_navid` | 7B 视频 VLM | [jzhzhang/Uni-NaVid](https://github.com/jzhzhang/Uni-NaVid) | [Jzzhang/Uni-NaVid](https://huggingface.co/Jzzhang/Uni-NaVid) 中 `uninavid-7b-full-224-video-fps-1-grid-2` 子目录 |
-| `navila` | VLM | [AnjieCheng/NaVILA](https://github.com/AnjieCheng/NaVILA) | 上游 README 链接的 Hugging Face collection |
-| `awarevln` | InternVL2-8B | [GWxuan/AwareVLN](https://github.com/GWxuan/AwareVLN) | 上游 README 中的 checkpoint 链接 |
-| `navida` | Qwen2.5-VL-3B | NaVIDA(arXiv 2601.18188) | **暂未公开发布**,发布后在此补充链接 |
+| `streamvln` | LLaVA-Video (Qwen1.5) | [InternRobotics/StreamVLN](https://github.com/InternRobotics/StreamVLN) | [mengwei0427/StreamVLN_Video_qwen_1_5_r2r_rxr_envdrop_scalevln](https://huggingface.co/mengwei0427/StreamVLN_Video_qwen_1_5_r2r_rxr_envdrop_scalevln) |
+| `navid` | 7B video VLM | [jzhzhang/NaVid-VLN-CE](https://github.com/jzhzhang/NaVid-VLN-CE) | [Jzzhang/NaVid](https://huggingface.co/Jzzhang/NaVid) |
+| `uni_navid` | 7B video VLM | [jzhzhang/Uni-NaVid](https://github.com/jzhzhang/Uni-NaVid) | [Jzzhang/Uni-NaVid](https://huggingface.co/Jzzhang/Uni-NaVid) — subfolder `uninavid-7b-full-224-video-fps-1-grid-2` |
+| `navila` | open VLM | [AnjieCheng/NaVILA](https://github.com/AnjieCheng/NaVILA) | HF collection linked in the upstream README |
+| `awarevln` | InternVL2-8B | [GWxuan/AwareVLN](https://github.com/GWxuan/AwareVLN) | checkpoint links in the upstream README |
+| `navida` | Qwen2.5-VL-3B | loads via Transformers — no repo | not yet public (arXiv 2601.18188) |
+| `activevln` | Qwen2.5-VL | bundled Transformers policy | `checkpoints/activevln/{rl,sft}_{r2r,rxr}` |
+| `janusvln` | VLM + VGGT | bundled `qwen_vl` runtime | self-contained checkpoint (embedded VGGT) |
+| `internvla-n1` | dual-system VLA | bundled `internnav` runtime | System 1/2 checkpoints from the authors |
+| `onevla` | VLA + flow head | bundled OneVLA runtime | `run/checkpoints/*.pt` + `run/config.yaml` + `run/dataset_statistics.json` |
+| `gavln` | SigLIP + VGGT | bundled GA-VLN runtime | model + `vision_tower` (SigLIP) + `vggt_path` |
 
-多数方法的适配器逐行复用上游预处理代码,因此除 checkpoint 外还需要
-`git clone` 对应上游仓库作为 `repo_path`。NaVIDA 权重未公开期间,未提供
-checkpoint 时框架产出类型化的 checkpoint-missing 失败,不会静默跳过。
+Example — StreamVLN checkpoint:
 
-## 3. 运行环境(上游各自安装,控制面不代装)
+```bash
+huggingface-cli download mengwei0427/StreamVLN_Video_qwen_1_5_r2r_rxr_envdrop_scalevln \
+  --local-dir checkpoints/streamvln
+```
 
-每个方法/仿真器保留上游依赖环境;在资源映射中为每个角色指定该环境的解释器:
+All built-in inference implementations are bundled under `extensions/methods/`.
+Install the method's Python dependencies and download weights; no separate
+method repository is needed. NaVid / Uni-NaVid additionally need EVA weights:
+place `eva_vit_g.pth` inside the checkpoint directory or set `vision_tower` to
+an existing weight file. InternVLA-N1's auxiliary DepthAnything weights belong
+inside its checkpoint directory (see [method environments](../docs/deployment.md#method-environments)).
+A run with a missing checkpoint fails with a typed checkpoint-missing error —
+it is never silently skipped.
 
-| 角色 | 环境要点 |
+## 4. Register once after downloading
+
+```bash
+python -m nav_eval configure \
+  --method streamvln \
+  --checkpoint checkpoints/streamvln \
+  --method-python envs/nav_streamvln/bin/python \
+  --simulator habitat024 \
+  --environment-python envs/nav_streamvln/bin/python \
+  --data-root data
+```
+
+The command creates or merges the ignored, permanent `configs/local.json`.
+Multi-method registrations are keyed by plugin, so adding another method does
+not replace existing method or simulator entries. `plan` and `run` load it
+automatically. Existing resource maps are legacy import input only:
+
+```bash
+python -m nav_eval configure --from configs/resources/my-host.json
+```
+
+The first run records content digests of weights and assets; swapping weights
+under an existing run is rejected.
+
+## Split sizes
+
+Full-split episode counts: R2R val_unseen 1,839 / val_seen 778; RxR val_unseen
+guide 11,006 (multilingual subsets filter via `benchmark_settings.languages`);
+ObjectNav MP3D val 2,195; VLNVerse fine 825 / coarse 835. Experiment configs
+ship with small subsets — remove `episodes` / `episode_limit` for full runs.
+
+## Licenses
+
+| Data | License / access |
 |---|---|
-| `navida` 推理 | Python ≥3.10 + PyTorch + Transformers + flash-attn + qwen-vl-utils(按上游 NAVIDA 依赖) |
-| `awarevln` / `streamvln` / `navid` / `navila` 推理 | 按各自上游仓库 README 安装(版本以上游发布为准) |
-| `habitat017` / `habitat024` / `habitat030` 仿真 | [habitat-sim](https://github.com/facebookresearch/habitat-sim) / [habitat-lab](https://github.com/facebookresearch/habitat-lab) 对应版本 tag(0.1.7 / 0.2.4 / 0.3.0);habitat024 需在 `pythonpath` 加入上游 habitat-lab/baselines 源码,habitat017 需把 habitat_sim `_ext` 加入 `library_paths`(CLI 已内置处理,资源文件示例见 `configs/resources/example.json`) |
-| `isaacsim500` 仿真 | [NVIDIA Isaac Sim 5.0](https://developer.nvidia.com/isaac/sim);资源映射需指定其 pip 预打包目录(`pythonpath`)与 `challenge_repo` |
+| R2R-CE / RxR-CE episodes | upstream releases derived from Matterport3D panoramas — MP3D terms apply |
+| MP3D scenes | Matterport3D Terms of Use |
+| ObjectNav MP3D episodes | CC BY-NC-SA 3.0 US (derived from Matterport3D) |
+| HM3D scenes + episodes | Matterport research agreement |
+| HSSD scenes | CC BY-NC 4.0 |
+| hab3 episodes / Spot / humanoids | HF `ai-habitat/*` (episodes CC-BY-NC-4.0; humanoid motions under the SMPL body license; Spot ships its own license) |
+| Model weights | their upstream repositories' licenses |
 
-## 4. 接线:资源映射
-
-```bash
-cp configs/resources/example.json configs/resources/my-host.json
-# 填入:解释器(envs/*/bin/python 或任何绝对路径)、GPU、weights/、source/、data 路径
-python -B -m nav_eval plan --config configs/experiments/navida-r2r.json --resources configs/resources/my-host.json
-```
-
-`example.json` / `parallel.example.json` 使用仓库相对路径演示 `weights/`、`source/`、
-`envs/`、`data` 的引用方式;你自己的资源映射(建议命名 `my-host.json`,机器专属,
-不入库)可自由使用绝对路径。首个 run 会记录权重与资产的内容摘要,替换权重后混入
-旧 run 会被拒绝。
-
-InternVLA-N1 不在本仓库实现;外部插件需自行记录 System 1 与 System 2 的权重版本和
-摘要,不写入运行时镜像。
-
-## 5. 复现入口
-
-```bash
-MODE=plan bash scripts/inference.sh navida r2r configs/resources/my-host.json   # 只校验配置
-bash scripts/inference.sh navida r2r configs/resources/my-host.json             # 采集并自动评分
-python -B -m nav_eval resume --run runs/<run-id>                                # episode 级恢复
-```
-
-全集规模:R2R val_unseen 1839 / val_seen 778 / RxR val_unseen guide 11006
-(RxR 多语言子集通过实验配置的 `benchmark_settings.languages` 过滤;详见
-[README](../README.zh-CN.md))。
+Downloads land in your untracked `data/` tree; their local paths stay out of
+the repository through ignored `configs/local.json`. `asset_files()` records the episode
+files, scenes, navmeshes and URDFs each run actually used — lock data
+provenance alongside run records when comparing across hosts.

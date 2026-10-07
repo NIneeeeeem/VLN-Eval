@@ -4,28 +4,41 @@ __pycache__/
 *.egg-info/
 .venv/
 .env
+.env.*
+!.env.example
 build/
 dist/
 
 # Local tooling state / caches
 .ruff_cache/
+.pytest_cache/
 .claude/
 .omc/
 .omx/
 .agents/
 .codex/
+.aws/
 
 # Heavy local assets: kept on disk for reproduction, never published
 .isaac_deps/
 data/*
 !data/README.md
+!data/README.zh-CN.md
 third_party/*
 !third_party/README.md
 
 # Host-specific resource maps (machine interpreters/paths; build your own from example.json)
+configs/local.json
+configs/.run.lock
+# Benchmark dependency snapshots (installed by scripts/setup_benchmark.py)
+extensions/benchmarks/**/runtime/
 configs/resources/*this-host*.json
+configs/resources/my-*.json
+configs/resources/*.local.json
+configs/experiments/my-*.json
 
 # Local asset directories suggested by the example resource maps
+checkpoints/
 weights/
 source/
 envs/
@@ -36,9 +49,4 @@ runs/*
 # Unpublished development material
 tests/
 docs/notes
-scripts/r2r_batch_matrix.py
-scripts/r2r_full_suite.py
-scripts/r2r_replicas_validation.py
-scripts/run_streamvln_batch_full.py
-scripts/validate_streamvln_batch.py
-scripts/compare_streamvln_paths.py
+docs/*-verification.md

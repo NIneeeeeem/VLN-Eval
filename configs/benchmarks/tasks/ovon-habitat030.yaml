@@ -1,0 +1,44 @@
+# Task-only OVON entrypoint for Habitat-Lab 0.3.0.
+# Habitat 0.3 constructs its simulator action space internally; in particular
+# it rejects the legacy ``action_space_config`` field used by OVON 0.2.3.
+# @package _global_
+defaults:
+  - /habitat: habitat_config_base
+  - /habitat/task: objectnav
+  - /habitat/simulator/sensor_setups@habitat.simulator.agents.main_agent: rgbd_agent
+  - /habitat/dataset/objectnav: hm3d
+  - _self_
+
+habitat:
+  environment:
+    max_episode_steps: 500
+  dataset:
+    type: OVON-v1
+    split: val_seen
+    data_path: data/datasets/ovon/hm3d/v1/val_seen/val_seen.json.gz
+    scenes_dir: data/scene_datasets
+  simulator:
+    type: OVONSim-v0
+    turn_angle: 30
+    agents:
+      main_agent:
+        sim_sensors:
+          rgb_sensor:
+            width: 640
+            height: 360
+            hfov: 90
+            position: [0, 1.31, 0]
+          depth_sensor:
+            width: 640
+            height: 360
+            hfov: 90
+            position: [0, 1.31, 0]
+        height: 1.41
+        radius: 0.17
+  task:
+    measurements:
+      distance_to_goal:
+        type: OVONDistanceToGoal
+        distance_to: VIEW_POINTS
+      success:
+        success_distance: 0.25

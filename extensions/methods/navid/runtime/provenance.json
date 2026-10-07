@@ -1,0 +1,33 @@
+{
+  "source": "https://github.com/jzhzhang/NaVid-VLN-CE",
+  "revision": "ce2f804a43fb23f1d52431ec24be1acf74c3f4f4",
+  "license_note": "See notices/ and retained source headers; the Nav-Eval root license does not override upstream terms.",
+  "modifications": "Method namespace imports; lazy/inference-only package initialization; simulator-independent helpers. See local diff for asset path and inference boundary changes.",
+  "source_sha256": {
+    "agent_uninavid.py": "8fa535ac53d93736846202c09bcf47353a0ffd3e794ab184a8ddf874c3fc1a03",
+    "uninavid/mm_utils.py": "9df3d297c4cf941873b5429bc52ae8ac173c0076383682124be6f412ef5bfd25",
+    "uninavid/constants.py": "e3ebc58f1ab1621ff7ed640091300b75bc9f48721b8b9a9c2fe517fc53f97c18",
+    "uninavid/__init__.py": "113f14fca84e66e442381795f5efff2753d86bcc79342b83d1fe555fe2be9d3a",
+    "uninavid/model/__init__.py": "5bde0741ab06fb21182de158adcc23f30abed0b868e1154efcdb1e37da454ca9",
+    "uninavid/model/language_model/llava_llama_vid.py": "a65b927255e0f5a6b6653f6d91991a44a6f9fd6c2f3716c91eb046c164df2f3d",
+    "uninavid/model/uninavid_arch.py": "bc216edce6307cc238ef71c80e67d2b6fbcedc5aaf9f9d0b9d59a859987c62e3",
+    "uninavid/model/multimodal_projector/builder.py": "19f127682ffad6a7bb71a35fc7a463dbb3eb76594180ba54931bee02331a0bd9",
+    "uninavid/model/multimodal_encoder/builder.py": "0978ac29ef7106ae86ac2f05f38c2e1d98d0cca60dd5b821334ff2f60a01538f",
+    "uninavid/model/multimodal_encoder/eva_vit.py": "37eefba11093d535aa287377af848750e91d023cd43b331c00aee1b6f7d9787f",
+    "uninavid/model/multimodal_encoder/clip_encoder.py": "164bf1716b26e51244ea77fa938e581c73c3cad91e4c962d1a29908fd2524e07",
+    "uninavid/conversation.py": "c2ce703ee981efb1aa89dcb28868dad8cabfec8c5fa41abee0117f97f6948c5d",
+    "uninavid/model/builder.py": "c37d5d33755b7262dc76e9aebe50bf62e7bad5766bb574d7a121cabc07feb409",
+    "agent_navid.py": "94cb3b7da5a2f22ef00a67aa2410b7f7fb1274231cac6d5bffec6b09424ad6fb",
+    "navid/mm_utils.py": "0ab68a3b66df6ba760ab4b8e418040496f13caa1c7aa36518c7e3f063dd0d968",
+    "navid/constants.py": "da21c341b74464ccb4066b747093a9f7ece005d3a946a9e58391e197f22b32ea",
+    "navid/__init__.py": "113f14fca84e66e442381795f5efff2753d86bcc79342b83d1fe555fe2be9d3a",
+    "navid/model/__init__.py": "3c3fd1aba2860572cd950df43181ef8c27032353d3555969d383f0cd9dd27698",
+    "navid/model/language_model/llava_navid.py": "b4fa86f661fc347f62e0cb233960b13c41659f19093fe36185d6777993bfff4c",
+    "navid/model/navid_arch.py": "dc0d1cf0acfa165b5335ed6ce23539e46c5304d9f94304ea5585069e156a2100",
+    "navid/model/multimodal_projector/builder.py": "19f127682ffad6a7bb71a35fc7a463dbb3eb76594180ba54931bee02331a0bd9",
+    "navid/model/multimodal_encoder/builder.py": "a114a2ed6781e59f3c319e11d996b74e107519441e1f9652a061da365c9908d1",
+    "navid/model/multimodal_encoder/eva_vit.py": "37eefba11093d535aa287377af848750e91d023cd43b331c00aee1b6f7d9787f",
+    "navid/model/builder.py": "fa0377eec05756c1032304c5918a8fa4a6b2398b1d7d300127a79100c3814f18",
+    "navid/conversation.py": "c2ce703ee981efb1aa89dcb28868dad8cabfec8c5fa41abee0117f97f6948c5d"
+  }
+}

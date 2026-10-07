@@ -1,0 +1,74 @@
+# Task-only GOAT entrypoint for Habitat-Lab 0.2.4.
+# @package _global_
+defaults:
+  - /habitat: habitat_config_base
+  - /habitat/simulator/agents@habitat.simulator.agents.main_agent: rgbd_agent
+  - /habitat/task: task_config_base
+  - /habitat/task/actions:
+    - stop
+    - move_forward
+    - turn_left
+    - turn_right
+    - look_up
+    - look_down
+    - subtask_stop
+  - /habitat/task/measurements:
+    - distance_to_goal
+    - success
+    - spl
+    - soft_spl
+    - goat_distance_to_goal_reward
+  - /habitat/task/lab_sensors:
+    - goat_goal_sensor
+    - compass_sensor
+    - gps_sensor
+    - current_subtask_sensor
+  - _self_
+
+habitat:
+  environment:
+    max_episode_steps: 5000
+  dataset:
+    type: Goat-v1
+    split: val_seen
+    data_path: data/datasets/goat_bench/hm3d/v1/val_seen/val_seen.json.gz
+    scenes_dir: data/scene_datasets
+  simulator:
+    type: GOATSim-v0
+    turn_angle: 30
+    tilt_angle: 30
+    action_space_config: v1
+    agents:
+      main_agent:
+        sim_sensors:
+          rgb_sensor:
+            width: 640
+            height: 360
+            hfov: 90
+            position: [0, 1.31, 0]
+          depth_sensor:
+            width: 640
+            height: 360
+            hfov: 90
+            position: [0, 1.31, 0]
+        height: 1.41
+        radius: 0.17
+  task:
+    type: Goat-v1
+    goal_sensor_uuid: goat_subtask_goal
+    actions:
+      subtask_stop:
+        type: SubtaskStopAction
+    lab_sensors:
+      goat_goal_sensor:
+        image_cache_encoder: CLIP_goat
+        object_cache: data/goat-assets/goal_cache/ovon/category_name_clip_embeddings.pkl
+        image_cache: data/goat-assets/goal_cache/iin/val_seen_embeddings/
+        language_cache: data/goat-assets/goal_cache/language_nav/val_seen_instruction_clip_embeddings.pkl
+    measurements:
+      distance_to_goal:
+        type: GoatDistanceToGoal
+        distance_to: VIEW_POINTS
+      success:
+        type: GoatSuccess
+        success_distance: 0.25

@@ -11,7 +11,7 @@ import copy
 import time
 from pathlib import Path
 
-from nav_eval.contracts import ContractError, SCHEMA_VERSION, validate_observation
+from nav_eval.contracts import SCHEMA_VERSION, ContractError, validate_observation
 from nav_eval.tensorcode import decode_tensor
 
 FORWARD_STEP_M = 0.25
@@ -37,12 +37,12 @@ class ReusablePromptTokenizer:
 
 
 class StreamVLNMethodService:
-    def __init__(self, checkpoint=None, repo_path=None, preprocess_mode="lazy", tokenizer_mode="reuse"):
+    def __init__(self, checkpoint=None, preprocess_mode="lazy", tokenizer_mode="reuse"):
         if preprocess_mode not in {"eager", "lazy"}:
             raise ContractError("StreamVLN preprocess_mode must be eager or lazy")
         if tokenizer_mode not in {"upstream", "reuse"}:
             raise ContractError("StreamVLN tokenizer_mode must be upstream or reuse")
-        self.checkpoint, self.repo_path = checkpoint, repo_path
+        self.checkpoint = checkpoint
         self.preprocess_mode = preprocess_mode
         self.tokenizer_mode = tokenizer_mode
         self.model = self.evaluator = None
@@ -61,18 +61,10 @@ class StreamVLNMethodService:
             return
         if not self._checkpoint_available():
             raise ContractError("StreamVLN checkpoint missing: set checkpoint to a local release directory")
-        if not self.repo_path or not (Path(self.repo_path) / "streamvln/streamvln_eval.py").is_file():
-            raise ContractError("StreamVLN repo_path must contain streamvln/streamvln_eval.py")
-        import sys
-        from types import SimpleNamespace
-
-        for path in (self.repo_path, str(Path(self.repo_path) / "streamvln")):
-            if path not in sys.path:
-                sys.path.insert(0, path)
         import torch
         import transformers
-        from model.stream_video_vln import StreamVLNForCausalLM
-        from streamvln_eval import VLNEvaluator
+        from .runtime.model.stream_video_vln import StreamVLNForCausalLM
+        from .runtime.policy import StreamPolicy
 
         self.torch = torch
         self.tokenizer = transformers.AutoTokenizer.from_pretrained(
@@ -91,10 +83,7 @@ class StreamVLNMethodService:
         model.to("cuda")
         model.eval()
         model.reset(1)
-        args = SimpleNamespace(num_frames=MODEL_NUM_FRAMES, num_future_steps=MODEL_FUTURE_STEPS,
-                               num_history=MODEL_NUM_HISTORY, save_video=False, region_eval=False)
-        self.evaluator = VLNEvaluator(str(Path(self.repo_path) / "config/vln_r2r.yaml"),
-                                     model=model, tokenizer=self.tokenizer, env_num=1, args=args)
+        self.evaluator = StreamPolicy(model.get_vision_tower().image_processor)
         self.model = model
 
     def prepare(self):
@@ -102,16 +91,12 @@ class StreamVLNMethodService:
 
     def asset_files(self):
         files = {}
-        for directory, pattern, label in ((self.checkpoint, "*", "checkpoint"),
-                                           (self.repo_path, "**/*.py", "upstream")):
+        for directory, pattern, label in ((self.checkpoint, "*", "checkpoint"),):
             if directory:
                 root = Path(directory)
                 for path in root.glob(pattern):
-                    # Record the method source, not unrelated experiments or vendored Habitat.
-                    if path.is_file() and (label == "checkpoint" or path.relative_to(root).parts[0] in {"llava", "streamvln"}):
+                    if path.is_file():
                         files[f"{label}/{path.relative_to(root)}"] = path
-        if self.repo_path:
-            files["upstream/config/vln_r2r.yaml"] = Path(self.repo_path) / "config/vln_r2r.yaml"
         return files
 
     def runtime_identity(self):

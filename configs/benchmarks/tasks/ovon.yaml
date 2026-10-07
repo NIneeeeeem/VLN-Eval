@@ -1,0 +1,30 @@
+# Installed into the repository's OVON runtime by setup_benchmark.py.
+# Public goals are category text;
+# no policy CLIP embedding cache or pretrained policy checkpoint is required.
+# @package _global_
+defaults:
+  - objectnav_stretch_hm3d
+  - override /habitat/simulator/agents@habitat.simulator.agents.main_agent: rgbd_agent
+  - override /habitat/task/lab_sensors: []
+  - _self_
+
+habitat:
+  dataset:
+    type: OVON-v1
+    split: val_seen
+    data_path: data/datasets/ovon/hm3d/v1/val_seen/val_seen.json.gz
+    scenes_dir: data/scene_datasets
+  simulator:
+    type: OVONSim-v0
+    agents:
+      main_agent:
+        sim_sensors:
+          depth_sensor:
+            position: [0, 1.31, 0]
+  task:
+    measurements:
+      distance_to_goal:
+        type: OVONDistanceToGoal
+        distance_to: VIEW_POINTS
+      success:
+        success_distance: 0.25

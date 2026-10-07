@@ -4,9 +4,9 @@
 
 The current wire envelope is `nav-eval/0.2`; new experiment configs use
 `nav-eval-experiment/1`, plugin declarations use `nav-eval-plugin/1`, and atomically
-committed artifacts use `nav-eval-rollout/0.4`. The legacy rollout reader is retained;
-production certification, step-level exactly-once and public-network authentication are
-not implemented.
+committed artifacts use `nav-eval-rollout/0.4`. The scope is trusted single-machine
+evaluation — TLS, public-network authentication, multi-tenant scheduling and
+step-level exactly-once delivery are out of scope.
 
 ## Workers and sessions
 
@@ -65,10 +65,10 @@ Habitat/VLNVerse tasks currently set `sim_time_s=null` and record control steps 
 reference paths, geodesic distances and scoring information only enter the environment's
 private evidence.
 
-This boundary disciplines trusted plugins; Python process isolation is not a filesystem
-security sandbox for untrusted code. Docker mounts only the code snapshot, the current
-role's config and explicitly configured resources by default; do not additionally mount
-private benchmark data into the method container.
+Python process isolation separates roles; it is not a security sandbox for untrusted
+code. Docker mounts only the code snapshot, the current role's config and explicitly
+configured resources by default — keep private benchmark data out of the method
+container.
 
 ## Actions and failures
 

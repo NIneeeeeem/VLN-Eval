@@ -3,8 +3,8 @@
 简体中文 | [English](protocol.md)
 
 当前 wire envelope 为 `nav-eval/0.2`，新增实验配置为 `nav-eval-experiment/1`，
-插件声明为 `nav-eval-plugin/1`，原子提交产物为 `nav-eval-rollout/0.4`。
-旧 rollout reader 保留；生产认证、step 级 exactly-once 和公共网络鉴权尚未实现。
+插件声明为 `nav-eval-plugin/1`，原子提交产物为 `nav-eval-rollout/0.4`。范围是可信
+单机评测——TLS、公共网络鉴权、多租户调度与 step 级 exactly-once 投递不在范围内。
 
 ## Worker 与会话
 
@@ -51,9 +51,8 @@ batching 能力并实现 `act_batch`；SDK 为每个 session 创建独立的
 `sim_time_s=null`，用 `control_tick` 记录控制步，避免把动作次数冒充物理秒。
 目标坐标、reference path、测地距离及评分信息仅进入 environment 的私有 evidence。
 
-该边界约束可信插件的协议；Python 进程隔离不是不可信代码的文件系统安全沙箱。
-Docker 默认只挂载代码快照、当前角色配置及显式配置的资源；不要额外把私有
-benchmark 数据挂进 method 容器。
+Python 进程隔离用于分离角色，不是针对不可信代码的安全沙箱。Docker 默认只挂载代码
+快照、当前角色配置及显式配置的资源——私有 benchmark 数据不要挂进 method 容器。
 
 ## 动作与失败
 

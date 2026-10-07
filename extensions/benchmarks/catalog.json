@@ -1,0 +1,159 @@
+[
+  {
+    "id": "r2r_ce",
+    "name": "VLN-CE / R2R-CE",
+    "aliases": [
+      "vln_ce",
+      "vln-ce"
+    ],
+    "task": "continuous_vln",
+    "simulators": [
+      "Habitat-Sim / Habitat-Lab"
+    ],
+    "scene_datasets": [
+      "Matterport3D"
+    ],
+    "source": "https://github.com/jacobkrantz/VLN-CE",
+    "requirements": "VLN-CE episodes and MP3D scene meshes."
+  },
+  {
+    "id": "rxr_ce",
+    "name": "RxR-CE",
+    "aliases": [],
+    "task": "multilingual_continuous_vln",
+    "simulators": [
+      "Habitat-Sim / Habitat-Lab"
+    ],
+    "scene_datasets": [
+      "Matterport3D"
+    ],
+    "source": "https://github.com/jacobkrantz/VLN-CE",
+    "requirements": "RxR-CE guide episodes, language filtering and MP3D scene meshes."
+  },
+  {
+    "id": "objectnav",
+    "name": "ObjectNav",
+    "aliases": [
+      "object_nav"
+    ],
+    "task": "object_goal_navigation",
+    "simulators": [
+      "Habitat-Sim / Habitat-Lab"
+    ],
+    "scene_datasets": [
+      "Matterport3D",
+      "HM3D-Sem",
+      "Gibson"
+    ],
+    "source": "https://github.com/facebookresearch/habitat-lab/blob/main/DATASETS.md",
+    "requirements": "Built-in episode splits cover MP3D and HM3D; Gibson episodes are not integrated."
+  },
+  {
+    "id": "instance_imagenav",
+    "name": "InstanceImageNav",
+    "aliases": [
+      "instanceimagenav",
+      "instance_image_nav"
+    ],
+    "task": "instance_image_navigation",
+    "simulators": [
+      "Habitat-Sim / Habitat-Lab"
+    ],
+    "scene_datasets": [
+      "HM3D-Sem"
+    ],
+    "source": "https://aihabitat.org/docs/habitat-lab/habitat.tasks.nav.instance_image_nav_task.html",
+    "requirements": "Requires a method consuming image_reference goals and the instance_imagegoal sensor."
+  },
+  {
+    "id": "multion",
+    "name": "MultiON",
+    "aliases": [
+      "multi_on"
+    ],
+    "task": "sequential_object_navigation",
+    "simulators": [
+      "Habitat-Sim + MultiON"
+    ],
+    "scene_datasets": [
+      "Matterport3D",
+      "HSSD"
+    ],
+    "source": "https://github.com/saimwani/multiON",
+    "requirements": "MP3D category and HSSD language sequences: portable task plugin on stock Habitat 0.2.4 or 0.3.0. MP3D also needs the public cylinder assets; HSSD needs the referenced scene objects. No upstream score parity claimed."
+  },
+  {
+    "id": "hm3d_ovon",
+    "name": "HM3D-OVON",
+    "aliases": [
+      "ovon"
+    ],
+    "task": "open_vocabulary_object_navigation",
+    "simulators": [
+      "Habitat-Sim + OVON"
+    ],
+    "scene_datasets": [
+      "HM3D-Sem"
+    ],
+    "source": "https://github.com/naokiyokoyama/ovon",
+    "requirements": "Open-vocabulary labels and upstream OVON splits/runtime; not fixed-category ObjectNav."
+  },
+  {
+    "id": "goat_bench",
+    "name": "GOAT-Bench",
+    "aliases": [
+      "goat"
+    ],
+    "task": "multimodal_lifelong_navigation",
+    "simulators": [
+      "Habitat-Sim + GOAT-Bench"
+    ],
+    "scene_datasets": [
+      "HM3D-Sem"
+    ],
+    "source": "https://github.com/Ram81/goat-bench",
+    "requirements": "Language/category/image subtasks; preserve method memory across goal transitions."
+  },
+  {
+    "id": "scand",
+    "name": "SCAND",
+    "aliases": [],
+    "task": "offline_social_navigation",
+    "simulators": [],
+    "scene_datasets": [
+      "Real robot demonstrations"
+    ],
+    "source": "https://www.cs.utexas.edu/~AustinVilla/details/RAL22-Karnan.html",
+    "requirements": "Offline recorded demonstrations; no simulator or closed-loop counterfactual success claim."
+  },
+  {
+    "id": "vlnverse",
+    "name": "VLN-VERSE",
+    "aliases": [
+      "vln_verse"
+    ],
+    "task": "continuous_vln",
+    "simulators": [
+      "Isaac Sim"
+    ],
+    "scene_datasets": [
+      "VLN-VERSE challenge assets"
+    ],
+    "source": "https://github.com/InternRobotics/InternNav",
+    "requirements": "Existing Isaac binding; requires challenge assets and runtime."
+  },
+  {
+    "id": "hssd_socialnav",
+    "name": "HSSD SocialNav",
+    "aliases": [],
+    "task": "simulated_social_navigation",
+    "simulators": [
+      "Habitat 3.0"
+    ],
+    "scene_datasets": [
+      "HSSD"
+    ],
+    "source": "https://github.com/facebookresearch/habitat-lab",
+    "requirements": "Existing simulated human-following task; distinct from SCAND."
+  }
+]

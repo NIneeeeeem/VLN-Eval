@@ -1,0 +1,63 @@
+{
+  "hm3d_ovon": {
+    "repository": "naokiyokoyama/ovon",
+    "revision": "8300fcc9fcd820637ac202cb43db080229f53410",
+    "directory": "extensions/benchmarks/objectnav/hm3d_ovon/runtime",
+    "task_config": "ovon",
+    "task_configs": {
+      "habitat024": "ovon-habitat024",
+      "habitat030": "ovon-habitat030"
+    },
+    "environment_registration": {
+      "ovon/__init__.py": "from ovon import config\nfrom ovon.dataset import ovon_dataset\nfrom ovon.measurements import nav\nfrom ovon.task import simulator\n",
+      "ovon/dataset/__init__.py": "from ovon.dataset.ovon_dataset import OVONDatasetV1\n"
+    }
+  },
+  "goat_bench": {
+    "repository": "Ram81/goat-bench",
+    "revision": "74c41d19d4a4c3608d1575b512087b5a529aee0e",
+    "directory": "extensions/benchmarks/multigoal/goat_bench/runtime",
+    "task_config": "goat",
+    "task_configs": {
+      "habitat024": "goat-habitat024",
+      "habitat030": "goat-habitat030"
+    },
+    "compatibility_patches": [
+      {
+        "path": "goat_bench/utils/utils.py",
+        "replace": [
+          "from goat_bench.models.encoders.resnet_gn import ResNet\n",
+          ""
+        ]
+      },
+      {
+        "path": "goat_bench/utils/utils.py",
+        "replace": [
+          "def load_encoder(encoder, path):\n    assert os.path.exists(path)\n    if isinstance(encoder.backbone, ResNet):\n",
+          "def load_encoder(encoder, path):\n    from goat_bench.models.encoders.resnet_gn import ResNet\n    assert os.path.exists(path)\n    if isinstance(encoder.backbone, ResNet):\n"
+        ]
+      }
+    ],
+    "environment_registration": {
+      "goat_bench/__init__.py": "from goat_bench import config\nfrom goat_bench.dataset import goat_dataset\nfrom goat_bench.measurements import nav\nfrom goat_bench.task import goat_task, sensors, simulator\n"
+    }
+  },
+  "multion_mp3d": {
+    "repository": "saimwani/multiON",
+    "revision": "master",
+    "directory": "extensions/benchmarks/multigoal/multion/runtime/mp3d"
+  },
+  "multion_hssd": {
+    "repository": "3dlg-hcvc/multion-challenge",
+    "revision": "fdafb919c484f370f981c5a1399d10effd163fe8",
+    "directory": "extensions/benchmarks/multigoal/multion/runtime/hssd"
+  },
+  "vlnverse": {
+    "repository": "sihaoevery/vlnverse_emr",
+    "revision": "vlnverse",
+    "directory": "extensions/benchmarks/vln/vlnverse/runtime",
+    "environment_registration": {
+      "vlnverse/evaluator/__init__.py": "from importlib import import_module\n\n__all__ = ['Evaluator', 'VlnPeEvaluator', 'VlnMultiEvaluator']\n\ndef __getattr__(name):\n    modules = {'Evaluator': 'base', 'VlnPeEvaluator': 'vln_pe_evaluator', 'VlnMultiEvaluator': 'vln_multi_evaluator'}\n    if name not in modules:\n        raise AttributeError(name)\n    value = getattr(import_module('.' + modules[name], __name__), name)\n    globals()[name] = value\n    return value\n"
+    }
+  }
+}

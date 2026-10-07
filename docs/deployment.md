@@ -2,96 +2,252 @@
 
 [简体中文](deployment.zh-CN.md) | English
 
-Experiments and machine resources are configured separately. Existing Python/Conda
-environments can be used directly; the Docker launcher requires access to the daemon plus
-a pre-built and verified image digest. This repository does not publish real model or
-simulation images.
+Nav-Eval separates *what to run* (experiment configs, portable, in Git) from
+*where to run it* (permanent `configs/local.json`, machine-specific, git-ignored). Every
+method keeps its upstream dependency environment; the framework launches the
+model and the simulator as separate processes and wires them together.
+
+This page walks through the complete path: verify the control plane → build
+the environments → download assets → register the installation once → run, scale and
+containerize. Asset download links live in [Assets](../data/README.md);
+per-benchmark setup lives in [Benchmarks](benchmarks.md).
+
+After downloading assets, register weights with `python -m nav_eval configure --method <model> --checkpoint <path>`
+and simulators with `--simulator <plugin> --data-root data --environment-python <interpreter>`.
+The installation is permanent in
+`configs/local.json`; `plan/run` load it automatically. Repository-local environments
+can be installed with `bash scripts/setup_environment.sh <method-or-simulator>`.
+Select models and benchmarks in Bash:
+
+```bash
+METHOD=streamvln BENCHMARK=r2r_ce GPU=0 bash scripts/eval.sh
+GPU=0 bash scripts/eval_suite.sh
+# Per-invocation replica allocation; configure sufficient memory budgets first.
+METHOD=streamvln BENCHMARK=r2r_ce GPUS=0,1 bash scripts/eval.sh
+```
+
+`scripts/eval.sh <run-directory>` retains offline scoring.
+
+## Overview
+
+A typical evaluation involves:
+
+| Piece | Where it lives | Example |
+|---|---|---|
+| Experiment config | `configs/experiments/*.json` | `navida-r2r.json` |
+| Permanent installation | `configs/local.json` (git-ignored) | registered once with `configure` |
+| Method environment | shared Conda prefix | `envs/nav_streamvln` or `envs/nav_vlm` |
+| Simulator environment | `envs/nav_habitat030/` etc. | one per Habitat version |
+| Datasets and scenes | `data/` (git-ignored) | `data/datasets/r2r/`, `data/scene_datasets/mp3d/` |
+| Weights | `checkpoints/<method>/` (git-ignored) | `checkpoints/streamvln/` |
+| Run outputs | `runs/<output>/<run-id>/` | `episodes.jsonl`, evaluations |
+
+Prerequisites: Linux, an NVIDIA GPU, Conda, and the datasets/scenes for your
+benchmark ([Assets](../data/README.md)).
 
 ## Control-plane verification
 
+From the repository root, no GPU or simulator needed:
+
 ```bash
-python -m nav_eval plugins list
-python -m nav_eval doctor
-python -m nav_eval plan \
+python -B -m nav_eval plugins list
+python -B -m nav_eval doctor
+python -B -m nav_eval plan \
   --config configs/experiments/navida-r2r.json \
-  --resources configs/resources/my-host.json
+  --gpu 0
 ```
 
-These commands only verify plugin discovery, entry points and resource planning; they do
-not start models or simulators. Real methods keep their upstream dependency environments,
-checked during the preflight/prepare stages of `run`.
+`plugins list` and `doctor` check plugin discovery, interpreters and tooling.
+`plan` resolves the full experiment — benchmark, simulator, binding, sensors,
+actions and resource settings — and reports incompatibilities before anything
+launches. Models and simulators are loaded only during the preflight/prepare
+stages of `run`.
+
+## First run walkthrough (NaVIDA on R2R-CE)
+
+NaVIDA is the simplest method to set up: it loads directly through
+Transformers, so the method environment is plain `pip`. The same steps apply
+to every other method — swap in its environment from
+[Method environments](#method-environments). The NaVIDA checkpoint is not yet
+public ([arXiv 2601.18188](https://arxiv.org/abs/2601.18188)); until it is
+released, run this walkthrough with any model whose weights you have, or use
+the [benchmark smoke recipes](../configs/benchmarks/README.md) which need no
+weights at all.
+
+**1. Habitat 0.3.0 simulator environment:**
+
+```bash
+# Run from the cloned Nav-Eval repository root.
+export NAV_EVAL_ROOT="$PWD"
+mkdir -p "$NAV_EVAL_ROOT/envs"
+bash scripts/setup_environment.sh habitat030
+```
+
+**2. Method environment:**
+
+```bash
+export CUDA_HOME=/usr/local/cuda-12.8
+bash scripts/setup_environment.sh vlm
+MODEL_PY="$NAV_EVAL_ROOT/envs/nav_vlm/bin/python"
+```
+
+**3. Assets** under the repository root (relative paths resolve from the
+directory you invoke `nav_eval` in):
+
+```text
+data/
+├── datasets/r2r/val_unseen/val_unseen.json.gz
+└── scene_datasets/mp3d/<scene>/<scene>.glb
+checkpoints/navida/        # NaVIDA checkpoint (config + tokenizer + weight shards)
+```
+
+**4. Permanent installation** — save as `configs/local.json`
+(git-ignored; absolute paths also work):
+
+```json
+{
+  "method": {
+    "python": "envs/nav_vlm/bin/python",
+    "gpu": 0,
+    "min_free_memory_mib": 12000,
+    "timeout_s": 900,
+    "settings": {"checkpoint": "checkpoints/navida"}
+  },
+  "environment": {
+    "python": "envs/nav_habitat030/bin/python",
+    "gpu": 0,
+    "min_free_memory_mib": 4000,
+    "timeout_s": 900,
+    "settings": {"data_root": "data"}
+  }
+}
+```
+
+Choose a physical card with `GPU`/`GPUS` in Bash. The installation settings below are saved once.
+
+**5. Run.** The shipped `configs/experiments/navida-r2r.json` selects one
+episode; remove `episode_limit` for the full 1,839-episode split:
+
+```bash
+python -B -m nav_eval plan --config configs/experiments/navida-r2r.json \
+  --gpu 0
+python -B -m nav_eval run --config configs/experiments/navida-r2r.json \
+  --gpu 0 --output runs/navida-r2r
+python -B -m nav_eval evaluate --run runs/navida-r2r/<run-id>
+```
+
+When `runs/navida-r2r/<run-id>/` contains `episodes.jsonl` and an evaluation
+with SR/SPL, the environment is ready. Per-role logs are in
+`workers/*/method.log` / `environment.log`; failures are summarized in
+`failure.json`.
 
 ## Real runs
 
+The four commands cover the whole lifecycle:
+
 ```bash
-python -m nav_eval plan --config configs/experiments/navida-r2r.json --resources configs/resources/my-host.json
-python -m nav_eval run --config configs/experiments/navida-r2r.json --resources configs/resources/my-host.json
-python -m nav_eval run --config configs/experiments/navida-vlnverse.json --resources configs/resources/my-host.json
-python -m nav_eval resume --run runs/<run-id>
-python -m nav_eval evaluate --run runs/<run-id>
+python -m nav_eval plan    --config <experiment.json> --gpu 0
+python -m nav_eval run     --config <experiment.json> --gpu 0 --output <dir>
+python -m nav_eval resume  --run runs/<output>/<run-id>   # continue unfinished episodes
+python -m nav_eval evaluate --run runs/<output>/<run-id>   # re-score saved evidence, no inference
 ```
 
-Machine-specific resource maps (`*.this-host.json`) are not tracked in the repository.
-On any machine, build your own resource file from `configs/resources/example.json`.
-Before running, check the free VRAM of the physical
-GPUs listed there; GPU allocation only affects this run's workers and does not stop other
-processes.
+Notes on the permanent installation:
 
-Resources can be placed under `runtimes` keyed by plugin ID, or overridden with
-`method/environment`. Each role may specify python, gpu, pythonpath, library_paths, cwd,
-env, timeout_s, min_free_memory_mib, and settings such as checkpoint/repo_path/data_root/
-challenge_repo. Resource settings only accept the manifest's requires.paths/
-resource_settings; experiment parameters such as cameras, actions and success thresholds
-must go into the experiment config — they cannot bypass comparison keys and compatibility
-checks through the local map. Model and rendering processes may use different GPUs;
-physical cards are mapped to in-process 0 via CUDA_VISIBLE_DEVICES.
+- Build yours from [example.json](../configs/resources/example.json). Keys
+  `method` / `environment` set the two default roles; `runtimes` keyed by
+  plugin ID configures others. Each role accepts `python`, `gpu`,
+  `pythonpath`, `library_paths`, `cwd`, `env`, `timeout_s`,
+  `min_free_memory_mib`, and `settings` such as `checkpoint` / `vision_tower` /
+  `data_root`.
+- `plan` and `run` accept `--gpu <index>`: the physical GPU for both roles
+  this invocation, overriding the file. Keep static inventory — interpreters,
+  weights, data paths — in the file and pick the card per run; the
+  `scripts/` wrappers forward it from the `GPU` environment variable.
+- Resource settings accept the manifest's `requires.paths` /
+  `resource_settings` keys. Experiment parameters — cameras, actions, success
+  thresholds — belong in the experiment config, where they enter the
+  comparison key.
+- Model and rendering processes may sit on different GPUs; a physical card is
+  mapped to in-process device 0 via `CUDA_VISIBLE_DEVICES`.
+- VLNVerse registers the Isaac interpreter and `data_root`; install its local
+  task runtime with `python -B scripts/setup_benchmark.py vlnverse`. See
+  [Benchmarks: VLN-VERSE](benchmarks.md#vln-verse-vlnverse).
 
-Preflight checks paths, interpreters, GPUs and disk. Model loading in isolated processes
-and environment initialization run concurrently; episodes only start after all replicas
-pass prepare and identity verification. Per-replica logs go to
-`method.log/environment.log` and failure summaries to `failure.json`. The Python launcher
-cleans up separate process groups, including subprocesses started by interpreter scripts.
-Models stay resident across episodes; method history and caches are cleaned per the
-upstream reset rules.
+Execution behavior:
+
+- Preflight checks paths, interpreters, GPUs and disk before launch. Model
+  loading and environment initialization run concurrently; episodes start
+  after all replicas pass prepare and identity verification.
+- Models stay resident across episodes; `reset`/`close_episode` clean history
+  and caches following the upstream reset rules.
+- The launcher cleans up whole process groups, including subprocesses started
+  by interpreter scripts. Ctrl-C keeps committed attempts; uncommitted work
+  resumes from episode boundaries.
+- Start a new run after changing weights, decoding, camera geometry or the
+  simulator — `resume` continues only the same experiment.
 
 ## StreamVLN on R2R
 
-A host resource map binds the StreamVLN v1-3 checkpoint and Habitat 0.2.4:
+`configs/experiments/streamvln-r2r.json` runs a 33-episode subset (three
+routes from each of the 11 val_unseen scenes); remove `episodes` for the full
+1,839-episode split. The method environment doubles as the habitat024
+simulator environment (recipe in the [README quickstart](../README.md) and
+below under [Method environments](#method-environments)).
 
 ```bash
 python -B -m nav_eval run \
   --config configs/experiments/streamvln-r2r.json \
-  --resources configs/resources/my-host.json
+  --gpu 0
 ```
 
-This is a diagnostic subset of 33 distinct routes, three from each of the 11
-val_unseen scenes. Remove `episodes` to evaluate the full 1839-episode split.
-The reference host map selected GPU 4 and checked a combined 32000 MiB
-model/rendering budget. A long trajectory reached 27258 MiB (26.6 GiB) for the
-model process, so this budget was raised after the initial experiment; short
-smokes underestimate capacity. Wait for sufficient memory or select another GPU.
-Update paths and device allocation on another host.
+Defaults are `preprocess_mode: lazy` and `tokenizer_mode: reuse`: keep every
+raw RGB observation, preprocess only the selected current/history frames, and
+run upstream prompt construction against a dedicated tokenizer copy. Model
+precision, generation settings and random draws follow upstream. `eager` /
+`upstream` reproduce the method's own preprocessing behavior exactly.
 
-Defaults are `preprocess_mode: lazy` and `tokenizer_mode: reuse`: retain every raw
-RGB observation, preprocess only selected current/history frames, and reuse a
-dedicated prompt tokenizer copy while executing upstream prompt construction.
-Model precision, generation settings and random conjunction draws are preserved.
-Use `eager` and `upstream` for the baseline. The paired smoke configurations are
-`streamvln-r2r-smoke.json` and `streamvln-r2r-lazy-validation.json`.
+Set `min_free_memory_mib` from a conservative model-plus-simulator budget —
+a short smoke underestimates the memory a long trajectory needs. StreamVLN
+supports independent replicas; it does not declare shared sessions or batched
+generation. Compare runs only when experiment, assets, method identity and
+metric settings are identical.
 
-```bash
-python -B scripts/compare_inference.py BASE_RUN OPTIMIZED_RUN \
-  --streamvln-preprocessing --output comparison.json
-```
+## Default decoding and batch organization
 
-This exception allows only those two preprocessing settings to differ; actions,
-private evidence, metrics and identity locks must still match. StreamVLN supports
-independent replicas, but does not declare shared sessions or batched generation.
+Every method ships exactly one frozen default decoding, recorded in
+`runtime_identity()`; decoding must not change between baselines, and
+equivalence comparisons must not mix decoding settings.
+
+Default decoding per method:
+
+| Method | Default decoding |
+|---|---|
+| `navid` / `uni_navid` | Upstream checkpoint sampling — generation delegates to the upstream agent untouched (`extensions/methods/navid/service.py`) |
+| `navida` | `decoding: upstream` (`use_model_defaults=True`; checkpoint sampling overrides apply). Optional `decoding: greedy`, required for batch sizes above 1 |
+| `streamvln` | Greedy (`do_sample=false`, `num_beams=1`) |
+| `navila` | Greedy (`do_sample=false`, `temperature=0.0`) |
+| `awarevln` | Greedy (`do_sample=false`, `temperature=0.0`) |
+
+Batch organization:
+
+- Default `inference.mode: replicas` — every replica owns a resident model,
+  each worker holds exactly one session, and observe/reason/act proceeds
+  strictly in order within an episode, so generation is always singleton.
+  Upstream global histories (NaVid) and caches (StreamVLN) need no
+  thread-safety changes.
+- Explicit `inference.mode: shared` — one model serves several environment
+  sessions. `max_batch_size` defaults to 1 and preserves singleton numerical
+  behavior; values above 1 require the `independent_greedy` capability plus
+  the method's `batching_requires` settings (today only NaVIDA, which then
+  requires `decoding: greedy`). See
+  [Shared model and batching](#shared-model-and-batching).
 
 ## Parallel inference
 
-Add `"parallelism": 2` to the experiment config and two explicit assignments to the
-resource file:
+Add `"parallelism": 2` to the experiment and two assignments to the resource
+map (edit [parallel.example.json](../configs/resources/parallel.example.json)
+directly if you prefer):
 
 ```json
 {
@@ -102,60 +258,53 @@ resource file:
 }
 ```
 
-These entries merge with the existing `runtimes` and `method/environment` resource
-configuration; they do not replace weight and interpreter settings on their own. You can
-edit [parallel.example.json](../configs/resources/parallel.example.json) directly. The
-number of `replicas` must equal `parallelism`, and every GPU-requiring role must spell
-out its device. A replica's method and environment may sit on different cards, and
-multiple replicas may explicitly share one card. Replicas may only override deployment
-fields — not checkpoints, method settings or benchmark settings.
+Rules:
 
-The default `inference.mode: replicas` gives each replica its own method/environment
-process pair, with the resident model loaded exactly once. All replicas share one episode
-queue and pick up the next task upon completing the current one; long trajectories never
-hold other idle replicas waiting. Each worker still holds exactly one session, and within
-an episode the observe/reason/act/feedback order is strict. That is why NaVid's upstream
-global history or StreamVLN's caches, for example, do not need to become thread-safe.
-Each weight copy occupies its own VRAM in this mode; sharing weights requires the
-explicit configuration below.
+- `replicas` entries merge with the existing `runtimes` / `method` /
+  `environment` configuration — interpreters, weights and settings carry
+  over; each entry pins only deployment fields (GPU, memory, timeouts).
+- The number of `replicas` must equal `parallelism`, and every GPU-requiring
+  role must spell out its device. A replica's method and environment may sit
+  on different cards; several replicas may share one card.
+- Replicas may not override checkpoints or method/benchmark settings.
 
-GPU roles must configure a positive `min_free_memory_mib`, the conservative VRAM budget
-of that worker. Preflight sums the budgets of all model and rendering processes by
-physical GPU UUID and checks that the total fits into available VRAM. Numeric indices and
-UUIDs pointing at the same card are merged. This is a pre-launch capacity check, not a
-system-level VRAM reservation — leave headroom for the longest history and other jobs.
-The benefit of co-locating replicas on one card depends on model size and GPU load; do
-not assume doubling concurrency doubles speed.
-
-An example (replica allocations come from your host map, built from
-[parallel.example.json](../configs/resources/parallel.example.json)):
+Example:
 
 ```bash
 python -B -m nav_eval run \
   --config configs/experiments/navida-r2r-parallel.json \
-  --resources configs/resources/my-host.json
+  --gpus 0,1
 ```
 
-That example pins GPU 7, two replicas and 4 diagnostic episodes. Before scaling to a full
-split, confirm all scenes exist and adjust the episode selection. Other integrated
-methods use the same `parallelism/replicas` configuration by swapping the base resource
-map; per-method numerical equivalence under real parallelism still has to be verified.
+`navida-r2r-parallel.json` pins one GPU, two replicas and 4 diagnostic
+episodes. All replicas share one episode queue and pick up the next task on
+completion, so long trajectories never hold other replicas idle. Other
+methods use the same `parallelism`/`replicas` configuration with their own
+base resource map.
 
-Parallel logs land in `workers/000/`, `workers/001/`, etc.; `replicas.lock.json` locks
-each replica's runtime and assets. Before execution, all replicas must agree on identity
-and the episode list; restarts affect only the worker pairs that hit infrastructure errors
-or failed cleanup, and identity is re-checked. The scheduler commits attempts centrally;
-results, scoring and resume stay within one run directory. Ctrl-C reaps the process groups
-started by this run; committed attempts are kept, and uncommitted tasks resume from
-episode boundaries. The `local` launcher stays single-replica to avoid mixing RNG and
-simulation threads.
+GPU roles take a positive `min_free_memory_mib` — the conservative VRAM
+budget of that worker. Preflight sums budgets by physical GPU UUID (numeric
+indices and UUIDs pointing at the same card are merged) and checks the total
+fits available VRAM. Leave headroom for the longest history and other jobs;
+the speedup from co-locating replicas on one card depends on model size and
+GPU load.
+
+Operational details:
+
+- Per-replica logs land in `workers/000/`, `workers/001/`, …;
+  `replicas.lock.json` locks each replica's runtime and assets.
+- Before execution, all replicas agree on identity and the episode list.
+  Restarts affect only worker pairs that hit infrastructure errors or failed
+  cleanup; identity is re-checked. Results, scoring and resume stay within
+  one run directory.
+- The `local` launcher stays single-replica to keep RNG and simulation
+  threads isolated.
 
 ## Shared model and batching
 
-Adapted methods can serve multiple independent environments from one model; among the
-production methods only NaVIDA declares this capability today. Add the following to the
-experiment; resources still reuse `replicas` to pin the devices of each environment and
-the shared model:
+Adapted methods can serve multiple independent environments from one resident
+model (among the shipped methods, NaVIDA declares this capability). Add to
+the experiment:
 
 ```json
 {
@@ -167,135 +316,321 @@ the shared model:
 ```bash
 python -B -m nav_eval run \
   --config configs/experiments/navida-r2r-shared.json \
-  --resources configs/resources/my-host.json
+  --gpus 0,1
 ```
 
-The deployment resources merged from all `replicas[].method` must be identical; the model
-is loaded once and its VRAM budget counted once, while environment budgets accumulate.
-In this mode `parallelism` caps environments/sessions; `max_batch_size` caps the number
-of merged requests per batch, defaults to 1, and must lie between 1 and parallelism.
-The default overlaps environments with singleton inference. Values above 1 enable actual
-tensor batching and require a separate numerical-equivalence check. `max_wait_ms` is the
-upper bound for waiting for more requests once the first one is ready, defaulting to
-5 ms; the last episode need not wait for other environments. Queueing and GPU execution
-may still take longer — it is not an RPC latency cap.
-
-Only the current requests of different episodes are merged; within an episode the loop
-still waits for execution and new observations. History, action queues, generations and
-observation sequences are isolated per session. NaVIDA's multi-input uses left padding
-and keeps the original JPEG, frame sampling and action parsing; KV or
-responses are never reused across episodes. Merged queue requests may contain pending
-actions, so the actual model batch count should be read from the generation counters.
-Model logs go to `workers/shared-method/method.log`; environment logs stay in
-`workers/000/` and so on.
-
-Infrastructure or cleanup failures pause picking up new episodes, wait for all in-flight
-attempts to finish and commit, then restart the shared model and environments together
-and re-verify identity. Policy errors only terminate the affected episode and do not
-restart the model. A shared-model process crash affects all in-flight episodes using it;
-use the default replica mode when stronger failure isolation is needed. Quantization,
-tensor parallelism, vLLM/SGLang replacement and stochastic sampling batches are not
-enabled in this round.
-
-NaVIDA defaults to `decoding: upstream`, preserving `use_model_defaults=True`. The local
-checkpoint overrides the apparent do_sample=False with sampling defaults. Shared
-singleton inference preserves that behavior and saves/restores CPU/CUDA RNG per session.
-Batch sizes above 1 require explicit `method_settings: {"decoding": "greedy"}`, which
-disables those overrides while retaining BOS/EOS/pad token defaults. Greedy changed real
-trajectories in validation, so it must use a separate baseline. Larger batches are
-diagnostic options, not a claim of token-level or closed-loop equivalence.
+- Deployment resources merged from all `replicas[].method` must be identical;
+  the model is loaded once and its VRAM budget counted once, while
+  environment budgets accumulate.
+- `parallelism` caps environments/sessions; `max_batch_size` caps merged
+  requests per batch (1 … parallelism, default 1); `max_wait_ms` bounds the
+  wait for more requests once the first is ready (default 5 ms — a queueing
+  bound, not an RPC latency cap).
+- Only current requests from *different* episodes merge; within an episode
+  the loop still waits for execution and new observations. History, action
+  queues, generations and observation sequences are isolated per session.
+  NaVIDA's multi-input uses left padding and keeps the upstream JPEG/frame
+  sampling/action parsing; KV and responses are never reused across episodes.
+- Model logs go to `workers/shared-method/method.log`; environment logs stay
+  in `workers/000/`, … Read the real model batch count from the generation
+  counters — merged queue requests may contain pending actions.
+- Infrastructure or cleanup failures drain in-flight attempts, commit, then
+  restart model and environments together and re-verify identity. Policy
+  errors terminate only the affected episode.
+- NaVIDA defaults to `decoding: upstream` with per-session RNG
+  save/restore. Batch sizes above 1 require
+  `method_settings: {"decoding": "greedy"}` — greedy changed real
+  trajectories in validation, so keep it as a separate baseline. Quantization,
+  tensor parallelism and vLLM/SGLang serving are on the roadmap, not in this
+  release.
 
 ## Simulation and assets
 
-Isaac/InternUtopia uses a single Kit App and switches the selected scene via reset. The
-binding defaults allow `max_control_steps=500` control decisions and `max_task_steps=25000`
-upstream task steps; the latter is not the number of model decisions. Both belong to
-benchmark_settings and enter the comparison key. Upstream termination reasons and task
-counters are recorded separately. `navida-vlnverse-two-scenes.json` is a deployment
-diagnostic config with 20 decisions per scene and must not be used to report full
-benchmark scores. The exact rc/build identity of the local 5.0 installation is kept in
-the lock file; model initialization, Kit startup, scene resets and actual inference time
-are accounted separately.
+Isaac/InternUtopia uses a single Kit App and switches scenes via reset.
+Binding defaults allow `max_control_steps=500` control decisions and
+`max_task_steps=25000` upstream task steps; both are benchmark settings and
+enter the comparison key. `navida-vlnverse-two-scenes.json` is a two-scene
+deployment diagnostic (20 decisions per scene). The Isaac rc/build identity
+is kept in the lock file; model init, Kit startup, scene resets and inference
+time are accounted separately.
 
-The first run computes content digests of weights and selected assets, timed separately
-from model initialization; the presence of a file does not mean its identity was
-verified. The run directory contains the resolved config, per-role minimal configs,
-environment/model/scoring locks, episode attempts, trajectories, private evidence,
-timing and independent evaluations.
+Habitat platform notes:
+
+- ActiveVLN/OneVLA starter configs share the fresh Habitat 0.2.4 prefix.
+  Install only 0.2.4 and 0.3.0; specialized task recipes use these same SDKs.
+- R2R/RxR bindings on both Habitat versions offer the measured `pose` sensor (xyz +
+  quaternion, habitat world frame) required by GA-VLN.
+- The R2R/RxR bindings on both versions accept opt-in `camera_tilt` actions
+  (`benchmark_settings.allow_tilt`) for InternVLA-N1's ground-view probes —
+  each tilt consumes one control tick of the 500-step budget.
+
+The first run computes content digests of weights and selected assets. The
+run directory contains the resolved config, per-role minimal configs,
+environment/model/scoring locks, episode attempts, trajectories, private
+evidence, timing and independent evaluations.
+
+## Method environments
+
+Install from fresh `envs/nav_*` prefixes using the commands below. No pre-existing
+model environment is required. The three core prefixes are `nav_streamvln`
+(including Habitat 0.2.4), `nav_vlm` and `nav_habitat030`.
+
+Built-in model code is bundled in `extensions/methods/<method>/runtime/`.
+Only third-party Python dependencies, weights and HF caches belong to the method
+environment. No method checkout, editable method install, source `pythonpath`
+or source `cwd` is needed. Dependency files below record the installed versions.
+
+For a shared installation, use `bash scripts/setup_environment.sh streamvln habitat024`
+for StreamVLN / GA-VLN plus Habitat, and `bash scripts/setup_environment.sh vlm`
+for the other built-in methods. These create `envs/nav_streamvln` (Python 3.9,
+Transformers 4.45.1) and `envs/nav_vlm` (Python 3.10, Transformers 4.57.0).
+The model-specific files below are alternative legacy recipes, not additions to
+the shared requirements. Python version differences and namespaced VLM forks
+alone do not require separate environments.
+
+| Method | Installation | Notes |
+|---|---|---|
+| NaVIDA | Fresh install — [commands above](#first-run-walkthrough-navida-on-r2r-ce) | Transformers-only; no upstream repo |
+| StreamVLN | `configs/environments/streamvln-inference.txt` | Model code and prompt helpers are bundled; Habitat is needed only by the environment worker |
+| NaVid / Uni-NaVid | `configs/environments/navid-inference.txt` | Set `vision_tower` to EVA weights, or place `eva_vit_g.pth` inside the checkpoint directory; CLIP processor configs are bundled |
+| NaVILA / AwareVLN | `configs/environments/vila-inference.txt` | Python ≥3.10; isolated method namespaces contain each VLM fork |
+| ActiveVLN | Any Qwen2.5-VL-capable env; weights under `checkpoints/activevln/{rl,sft}_{r2r,rxr}` | In-process Transformers serving; sampling (t=0.2, top_p=0.8) is platform-seeded per episode |
+| JanusVLN | `configs/environments/janusvln-inference.txt` | VGGT is bundled; its KV cache is cleared per episode; greedy 24 tokens |
+| InternVLA-N1 | `configs/environments/internvla-n1-inference.txt` | Ground-view probes use `camera_tilt` (`benchmark_settings.allow_tilt`, habitat030); NavDP flow head is platform-seeded |
+| OneVLA | `configs/environments/onevla-inference.txt` | `checkpoint` = `run/checkpoints/*.pt`; `run/config.yaml` + `run/dataset_statistics.json` must exist; set resource `base_vlm` when needed; default attention is `sdpa` |
+| GA-VLN | `configs/environments/gavln-inference.txt` | Needs `pose` (habitat024/030), `vision_tower` (SigLIP) and `vggt_path`; 8-step KV windows reset via `model.reset_for_env`; R2R only |
+
+InternVLA-N1's auxiliary depth weights live inside the configured checkpoint
+directory: `depth_anything_v2_metric_hypersim_vits.pth` for asynchronous NextDiT,
+or `depth_anything_v2_vits.pth` for asynchronous NavDP. Source code and depth resize
+are independent of Habitat. A method's third-party dependency installation remains
+separate from the simulator SDK; CUDA wheels must match the selected interpreter.
+
+StreamVLN environment:
+
+```bash
+export CUDA_HOME=/usr/local/cuda-12.8
+bash scripts/setup_environment.sh streamvln habitat024
+```
+
+Source revisions and notices live in each runtime's
+`provenance.json` and `notices/`; the root Apache license does not override their
+terms. StreamVLN declares CC BY-NC-SA 4.0; JanusVLN/GA-VLN have no discovered
+top-level license grant in the recorded revisions.
+Export environment locks for reproduction (`build/` is git-ignored):
+
+```bash
+mkdir -p "$NAV_EVAL_ROOT/build/env-locks"
+for role in nav_vlm nav_habitat030; do
+  conda list -p "$NAV_EVAL_ROOT/envs/$role" --explicit \
+    > "$NAV_EVAL_ROOT/build/env-locks/$role-conda.txt"
+  "$NAV_EVAL_ROOT/envs/$role/bin/python" -m pip freeze \
+    > "$NAV_EVAL_ROOT/build/env-locks/$role-pip.txt"
+done
+```
 
 ## Docker
 
-The experiment selects `launcher: docker`, with per-role resource settings:
+No prebuilt images are shipped — build one from your working environments
+with the recipe below. The recommended layout is a single combined image
+holding the method and Habitat environments side by side; the host runs the
+control plane and starts worker containers from it. Launcher implementation:
+`nav_eval/execution/launchers.py`.
+
+Planning guide: one native method needs **two runtime environments** (method +
+Habitat 0.3.0), packaged as one combined image or two. Four-session
+`replicas` then runs 4 method + 4 simulator containers (four model copies);
+NaVIDA `shared` runs 1 + 4. Shared installation uses two model dependency groups,
+`streamvln` and `vlm`, plus SDK environments as needed. StreamVLN with Habitat
+0.2.4 can use the same interpreter for both roles; separate worker processes
+still load the model and simulator.
+
+### Host preparation
+
+Install the NVIDIA driver, Docker Engine and NVIDIA Container Toolkit per the
+[NVIDIA installation guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html);
+the invoking user needs daemon access. Initial runtime configuration (admin):
+
+```bash
+sudo nvidia-ctk runtime configure --runtime=docker
+sudo systemctl restart docker
+nvidia-smi && docker info
+CUDA_IMAGE='your-cuda-image@sha256:REPLACE_WITH_REAL_DIGEST'
+docker run --rm --gpus device=0 "$CUDA_IMAGE" nvidia-smi
+```
+
+Do not install host kernel drivers inside images; a working `nvidia-smi` does
+not by itself verify headless rendering — test with a real episode.
+
+### Build a combined image
+
+Snapshot your working environments in a git-ignored build directory:
+
+```bash
+mkdir -p "$NAV_EVAL_ROOT/build/docker-streamvln" && cd "$NAV_EVAL_ROOT/build/docker-streamvln"
+METHOD_ENV="$NAV_EVAL_ROOT/envs/nav_vlm"
+SIM_ENV="$NAV_EVAL_ROOT/envs/nav_habitat030"
+conda list -p "$METHOD_ENV" --explicit > conda-explicit.txt
+"$METHOD_ENV/bin/python" -m pip freeze > pip-freeze.txt
+conda pack -p "$METHOD_ENV" -o model.tar.gz
+conda pack -p "$SIM_ENV" -o habitat030.tar.gz
+```
+
+Dockerfile beside both archives (base image pinned by digest, with the system
+libraries Habitat needs, including EGL/OpenGL):
+
+```dockerfile
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+COPY model.tar.gz habitat030.tar.gz /tmp/
+RUN mkdir -p /opt/envs/nav_vlm /opt/envs/nav_habitat030 \
+    && tar -xzf /tmp/model.tar.gz -C /opt/envs/nav_vlm \
+    && /opt/envs/nav_vlm/bin/python /opt/envs/nav_vlm/bin/conda-unpack \
+    && tar -xzf /tmp/habitat030.tar.gz -C /opt/envs/nav_habitat030 \
+    && /opt/envs/nav_habitat030/bin/python /opt/envs/nav_habitat030/bin/conda-unpack \
+    && rm /tmp/model.tar.gz /tmp/habitat030.tar.gz
+ENV PATH=/opt/envs/nav_vlm/bin:$PATH
+ENV PYTHONUNBUFFERED=1
+```
+
+```bash
+BASE_IMAGE='your-compatible-base@sha256:REPLACE_WITH_REAL_DIGEST'
+docker build --build-arg BASE_IMAGE="$BASE_IMAGE" -t nav-eval-streamvln-habitat030:repro .
+```
+
+The launcher references images by **RepoDigest** (`repo@sha256:<64 hex>`),
+not a tag or image ID. Publish to your registry and record the digest
+([Docker publishing](https://docs.docker.com/reference/cli/cli/image/push/)).
+
+### Resource map and launch
+
+The experiment sets `launcher: docker`; each role replaces `python` with
+`image` + `container_python`, keeps settings/budgets, and adds mounts and env:
 
 ```json
 {
-  "image": "registry.example/navida@sha256:<64-hex real digest>",
-  "container_python": "python",
-  "gpu": 0,
-  "mounts": [
-    {"source": "<host-weights-dir>", "target": "/weights", "read_only": true}
-  ],
-  "settings": {"checkpoint": "/weights/navida"}
+  "method": {
+    "image": "registry.example/nav-eval-streamvln-habitat030@sha256:REPLACE_WITH_64_HEX",
+    "container_python": "/opt/envs/nav_vlm/bin/python",
+    "min_free_memory_mib": 24000,
+    "timeout_s": 1800,
+    "shm_size": "8g",
+    "mounts": [
+      {"source": "/srv/nav-eval/assets/checkpoints/streamvln", "target": "/srv/nav-eval/assets/checkpoints/streamvln", "read_only": true},
+      {"source": "/srv/nav-eval/cache", "target": "/srv/nav-eval/cache", "read_only": false}
+    ],
+    "env": {
+      "HF_HOME": "/srv/nav-eval/cache/huggingface",
+      "XDG_CACHE_HOME": "/srv/nav-eval/cache/xdg",
+      "HF_HUB_OFFLINE": "1",
+      "TRANSFORMERS_OFFLINE": "1",
+      "NVIDIA_DRIVER_CAPABILITIES": "compute,utility",
+      "PYTHONPATH": "/opt/nav-eval"
+    },
+    "settings": {
+      "checkpoint": "/srv/nav-eval/assets/checkpoints/streamvln"
+    }
+  },
+  "environment": {
+    "image": "registry.example/nav-eval-streamvln-habitat030@sha256:REPLACE_WITH_64_HEX",
+    "container_python": "/opt/envs/nav_habitat030/bin/python",
+    "min_free_memory_mib": 4000,
+    "timeout_s": 1800,
+    "shm_size": "8g",
+    "mounts": [
+      {"source": "/srv/nav-eval/assets/data", "target": "/srv/nav-eval/assets/data", "read_only": true},
+      {"source": "/srv/nav-eval/cache", "target": "/srv/nav-eval/cache", "read_only": false}
+    ],
+    "env": {
+      "XDG_CACHE_HOME": "/srv/nav-eval/cache/xdg",
+      "NVIDIA_DRIVER_CAPABILITIES": "compute,utility,graphics"
+    },
+    "settings": {"data_root": "/srv/nav-eval/assets/data"}
+  },
+  "replicas": [
+    {"method": {"gpu": 0}, "environment": {"gpu": 0}},
+    {"method": {"gpu": 1}, "environment": {"gpu": 1}},
+    {"method": {"gpu": 2}, "environment": {"gpu": 2}},
+    {"method": {"gpu": 3}, "environment": {"gpu": 3}}
+  ]
 }
 ```
 
-Host-side mount sources are the only place host paths appear, and they live only in your
-untracked resource map. Path checks happen on the host; in-container resources use the
-mounted container paths, avoiding implicit path translation. Selected external plugins are loaded into
-the container with the code snapshot, without extra mounts. Data/weights use read-only
-mounts; model and shader caches need explicitly writable mounts. Source and each role's
-config are mounted read-only; the whole project is never mounted, and the method does
-not receive the environment's role config. Images must pre-install the respective SDK
-and original model dependencies; if the image is absent, Docker pulls it by the pinned
-digest.
+Launcher behavior:
 
-The two containers connect to the local control process via host loopback ports; no
-public network API is exposed. The launcher only stops containers it created with random
-names for this run. Docker command construction is testable, but with insufficient daemon
-privileges a real container run must be marked unverified.
+- Host preflight and hashing read asset paths before containers start: mount
+  assets at the **same absolute path on both sides**, including external
+  symlink targets.
+- The code snapshot is mounted read-only at `/opt/nav-eval` (runtime packages
+  + selected external plugins). Prepare the vision/tokenizer cache before
+  enabling the offline flags.
+- Workers run as host UID:GID; create writable cache dirs as that user.
+  `container_python` must start directly — the image ENTRYPOINT is replaced.
+- Container cwd is fixed at `/opt/nav-eval`; resource `cwd` affects only
+  host-launched processes. `pythonpath`/`library_paths` are not translated
+  into container paths — use `env.PYTHONPATH` / `env.LD_LIBRARY_PATH`,
+  keeping `/opt/nav-eval` in PYTHONPATH.
+- Each worker selects one physical GPU and uses local device numbering.
+  Headless Habitat needs the `graphics` driver capability
+  ([NVIDIA driver capabilities](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html));
+  `shm_size` does not increase GPU memory.
+- Worker HTTP ports are published dynamically on the host loopback — no
+  public port 8000, host network or Docker socket mount. This is a
+  single-host launcher; Isaac, external VLM services and multi-host execution
+  need separate recipes.
 
-## Resume and throughput
+Validate a CUDA op inside the image first, then run real episodes:
 
-The unit of recovery is the episode; the default infrastructure retry allowance is 0 —
-set `max_infrastructure_retries` in the original experiment when retries are needed.
-Policy errors are not retried; uncommitted episodes rerun from scratch. Completed
-attempts are never re-inferred, and mixing into an old run is refused when source code,
-plugins, models or assets change. After an infrastructure failure, workers are rebuilt
-before the next allowed attempt, re-verifying runtimes, assets and the episode list.
-Offline scoring after an interruption reads the frozen metric config directly and does
-not depend on previously generated score reports.
+```bash
+METHOD_IMAGE='registry.example/nav-eval-streamvln-habitat030@sha256:REPLACE_WITH_REAL_DIGEST'
+docker run --rm --gpus device=0 --entrypoint /opt/envs/nav_vlm/bin/python \
+  "$METHOD_IMAGE" -c 'import torch, transformers; print(torch.ones(1, device="cuda").cpu())'
+python -B -m nav_eval plan \
+  --config configs/experiments/my-streamvln-docker.json \
+  --gpu 0
+python -B -m nav_eval run \
+  --config configs/experiments/my-streamvln-docker.json \
+  --gpu 0 \
+  --output runs/docker-streamvln-r2r
+```
 
-`transport: binary` uses lossless buffer framing; `json` is the reference protocol.
-Lossy compression, quantization or engine replacement are not enabled.
-`shards/shard_index` splits the same frozen set across independent runs; each shard may
-additionally set `parallelism`. Episodes are filtered/limited first, then sharded, then
-dynamically assigned by the replica queue — different replicas never collect the same
-episode twice. Device capacity across different runs is still coordinated by the caller.
+### Optional: one outer container
 
-`timing.json` stores cold start, reset, act and step times; episode records include
-total RPC time. NaVIDA additionally reports preprocess/generate/decode times, the actual
-generation count, a histogram of generation batch sizes and input/output token counts;
-executing a pending action is not counted as a model generation. Each episode commits
-only new attempts, and JSONL is rebuilt on exit or resume.
+Run the control plane inside the combined image with `launcher: "python"`:
+the framework then starts isolated Python workers instead of extra containers
+(no Docker socket mount). Four replicas still mean four model + four
+simulator processes with the same memory cost. Set
+`method.python=/opt/envs/nav_vlm/bin/python`,
+`environment.python=/opt/envs/nav_habitat030/bin/python`, keep
+replicas/budgets/assets, and drop the image/container_python/mounts fields:
 
-`timing.json.sessions` records per run/resume the start time, rollout wall time, the
-committed decisions/completions, plus each replica's
-`attempts/episode_wall_time_s/busy_fraction` and phase timings. `decisions_per_second`
-uses the actual rollout wall time; a pending action is still a decision, not a
-generation. The top-level `method/environment` timings keep only a replica-0
-compatibility view. Each session's `method_workers` provides `current/retired` counts
-de-duplicated by actual model worker; the replicas' `method_worker_index` records
-ownership — in shared mode the same model seen by every environment must not be counted
-repeatedly. `batcher.batch_sizes/requests/queue_wait_s` describes queue batches and total
-request wait time, while `phases.generation_batch_sizes` holds the actual model
-generation batches.
+```bash
+docker run --rm --init --gpus all --shm-size 8g \
+  --user "$(id -u):$(id -g)" \
+  -e NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics \
+  -e HF_HOME=/srv/nav-eval/cache/huggingface -e XDG_CACHE_HOME=/srv/nav-eval/cache/xdg \
+  -v "$NAV_EVAL_ROOT:/work/nav-eval:ro" \
+  -v "$NAV_EVAL_ROOT/runs:/work/nav-eval/runs:rw" \
+  -v "/srv/nav-eval/assets:/srv/nav-eval/assets:ro" -v "/srv/nav-eval/cache:/srv/nav-eval/cache:rw" \
+  -w /work/nav-eval --entrypoint /opt/envs/nav_vlm/bin/python \
+  nav-eval-streamvln-habitat030@sha256:REPLACE_WITH_REAL_DIGEST \
+  -B -m nav_eval run \
+  --config configs/experiments/my-container-python.json \
+  --gpu 0 \
+  --output runs/container-streamvln-r2r
+```
 
-`collection.json.episodes_per_hour` is completions divided by accumulated rollout wall
-time, including concurrency, resets, communication, commits and any restarts in between;
-`collection_episodes_per_hour` additionally includes resource hashing, loading and
-identity verification. Neither includes process teardown at the end or offline scoring.
-`episode_wall_time_sum_s` keeps the plain sum of per-episode times and must not be used
-as the denominator of concurrent throughput. On resume, wall times accumulate across
-sessions and completed episodes are not double-counted; if a hard interrupt loses timers
-or counts cannot be reconciled, throughput returns null. Numerical equivalence,
-cross-GPU consistency and throughput gains each need their own measurement.
+Resource GPU IDs must match devices visible inside the container. The outer
+container sees both roles' assets, so deployment isolation is weaker than
+separate role mounts.
+
+## Reproduction records
+
+For a citable run, keep alongside the run directory: experiment JSON, a
+redacted host resource map, repository/upstream commits and local patches,
+checkpoint revisions, asset/vision/tokenizer/data hashes, dependency lists,
+image digests, interpreter paths, GPU/driver details, run locks, trajectories,
+failures and scores. A combined image has one digest for both roles; a digest
+does not freeze mounted weights or caches — those are covered by the asset
+hashes. Start a new run when changing model, decoding, geometry or simulator;
+`resume` only continues the same experiment.

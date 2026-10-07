@@ -1,0 +1,12 @@
+{
+  "schema_version": "nav-eval-plugin/1", "kind": "metric", "id": "goat_captured", "version": "1",
+  "requires_evidence": ["upstream_metrics_by_tick"],
+  "metric_set": {"schema_version": "nav-eval-metric-set/0.1", "id": "goat_captured", "evidence_schema": "upstream-habitat-captured-metrics/1", "metrics": [
+    {"entrypoint": "extensions.metrics.upstream_habitat_standard:GoatCompositeSuccess"},
+    {"entrypoint": "extensions.metrics.upstream_habitat_standard:GoatPartialSuccess"},
+    {"entrypoint": "extensions.metrics.upstream_habitat_standard:GoatObjectSuccess"},
+    {"entrypoint": "extensions.metrics.upstream_habitat_standard:GoatImageSuccess"},
+    {"entrypoint": "extensions.metrics.upstream_habitat_standard:GoatDescriptionSuccess"},
+    {"entrypoint": "extensions.metrics.upstream_habitat_standard:GoatCompositeSPL"}
+  ]}
+}

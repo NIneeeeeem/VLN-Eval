@@ -1,11 +1,11 @@
-"""Thin lifecycle wrapper around the upstream NaVid and Uni-NaVid agents."""
+"""Lifecycle wrapper around the bundled NaVid and Uni-NaVid inference agents."""
 from __future__ import annotations
 
 import tempfile
 import time
 from numbers import Integral
 
-from nav_eval.contracts import ContractError, SCHEMA_VERSION, validate_observation
+from nav_eval.contracts import SCHEMA_VERSION, ContractError, validate_observation
 from nav_eval.tensorcode import decode_tensor
 
 FORWARD_STEP_M = 0.25
@@ -19,12 +19,13 @@ VARIANTS = {
 class NaVidMethodService:
     """Delegate history, generation, parsing, and action queues to upstream."""
 
-    def __init__(self, variant, checkpoint, repo_path):
+    def __init__(self, variant, checkpoint, vision_tower=None):
         if variant not in VARIANTS:
             raise ContractError(f"unknown NaVid variant: {variant}")
         self.variant = variant
         self.checkpoint = checkpoint
-        self.repo_path = repo_path
+        from pathlib import Path
+        self.vision_tower = vision_tower or str(Path(checkpoint) / "eva_vit_g.pth")
         self.agent = None
         self.sessions = {}
         self._scratch = None
@@ -33,28 +34,17 @@ class NaVidMethodService:
     def _ensure_model(self):
         if self.agent is not None:
             return
-        import os
-        import sys
-
-        if not os.path.isdir(self.checkpoint):
-            raise ContractError(f"{self.variant} checkpoint directory not found: {self.checkpoint}")
-        if not os.path.isdir(self.repo_path):
-            raise ContractError(f"NaVid repository not found: {self.repo_path}")
-        vision_tower = os.path.join(self.repo_path, "model_zoo", "eva_vit_g.pth")
-        if not os.path.isfile(vision_tower):
-            raise ContractError(f"NaVid vision tower not found: {vision_tower}")
-        if self.repo_path not in sys.path:
-            sys.path.insert(0, self.repo_path)
-
         self._scratch = tempfile.TemporaryDirectory(prefix=f"nav-eval-{self.variant}-")
         if self.variant == "navid":
-            from agent_navid import NaVid_Agent
-            self.agent = NaVid_Agent(self.checkpoint, self._scratch.name, require_map=False)
+            from .runtime.agent_navid import NaVid_Agent
+            self.agent = NaVid_Agent(self.checkpoint, self._scratch.name, require_map=False,
+                                    vision_tower=self.vision_tower)
         else:
             # run.py uses this module. The older same-named class in
             # agent_navid lacks online feature caching and its reset protocol.
-            from agent_uninavid import UniNaVid_Agent
-            self.agent = UniNaVid_Agent(self.checkpoint, self._scratch.name, exp_save="")
+            from .runtime.agent_uninavid import UniNaVid_Agent
+            self.agent = UniNaVid_Agent(self.checkpoint, self._scratch.name, exp_save="",
+                                       vision_tower=self.vision_tower)
 
     def prepare(self):
         self._ensure_model()
@@ -90,12 +80,20 @@ class NaVidMethodService:
             context = payload["context"]
             if set(context) != {"episode_id", "goal", "embodiment", "seed"}:
                 raise ContractError("unexpected public episode fields")
-            if context["goal"].get("kind") != "language":
-                raise ContractError(f"{self.variant} requires a language goal")
+            goal = context["goal"]
+            if goal.get("kind") == "object_category":
+                # The method owns its prompt policy; category goals (ObjectNav)
+                # are rendered into this fixed template, part of the bundle identity.
+                instruction = (f"Navigate to the {goal['value']} in the environment. "
+                               f"When you get close to the {goal['value']}, stop.")
+            elif goal.get("kind") == "language":
+                instruction = goal["value"]
+            else:
+                raise ContractError(f"{self.variant} requires a language or object_category goal")
             self.agent.reset()
             self.sessions[session_id] = {
                 "episode_id": context["episode_id"],
-                "instruction": context["goal"]["value"],
+                "instruction": instruction,
                 "last_sequence": -1,
             }
             return {}
@@ -165,7 +163,7 @@ class NaVidMethodService:
     def asset_files(self):
         from pathlib import Path
 
-        return {"vision_tower": Path(self.repo_path) / "model_zoo" / "eva_vit_g.pth"}
+        return {"vision_tower": Path(self.vision_tower)}
 
     def runtime_identity(self):
         return {"agent_class": f"{type(self.agent).__module__}.{type(self.agent).__name__}",

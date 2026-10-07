@@ -1,0 +1,20 @@
+{
+  "benchmark": "multion",
+  "simulator": "habitat024",
+  "benchmark_settings": {
+    "variant": "mp3d",
+    "repo_root": ".",
+    "task_config": "configs/benchmarks/tasks/multion_mp3d.yaml",
+    "dataset_path": "data/datasets/multinav/3_ON/val/val.json.gz",
+    "asset_paths": [
+      "data/scene_datasets",
+      "data/objects/multion"
+    ]
+  },
+  "environment": {"settings": {"data_root": "data"},
+    "cwd": ".",
+    "pythonpath": [
+      "."
+    ]
+  }
+}

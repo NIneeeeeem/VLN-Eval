@@ -5,7 +5,7 @@
 ## The single execution pipeline
 
 ```text
-experiment + host resources
+experiment + permanent local installation
   -> manifest discovery
   -> resolve / preflight
   -> resident environment slots + isolated/shared model workers
@@ -66,7 +66,7 @@ observation defaults; standardized uses the benchmark defaults. Explicit observa
 overrides enter the comparison key.
 
 The plan freezes benchmark, simulator, binding, task settings, observations, controller,
-metrics, seed and episode selection. Absolute paths exist only in the resource map;
+metrics, seed and episode selection. Absolute paths live in the permanent `configs/local.json`;
 execution results record digests of source, plugins, models and assets.
 
 Discrete tasks use `control_tick` and never pass action counts off as physical seconds.
@@ -74,9 +74,9 @@ When geodesic distances are unavailable, null and the reason are stored, and met
 depending on that evidence return unavailable. GT and geometry evidence only enters
 evaluation artifacts and is never sent to the method.
 
-All built-in real plugins currently carry a diagnostic/unverified validation level. An
-importable entry point, a resolvable config, a real episode that runs, and paper-level
-reproduction certification are different tiers that do not substitute for each other.
+Each plugin manifest's `validation.level` records what has been verified for it: an
+importable entry point, a resolvable config, real episodes run, or certified full-split
+runs.
 
 ## Deployment, storage and resume
 

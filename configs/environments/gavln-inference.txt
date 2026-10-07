@@ -1,0 +1,4 @@
+# GA-VLN; install CUDA-matched torch, torchvision and flash-attn separately.
+-r streamvln-inference.txt
+qwen-vl-utils==0.0.14
+scipy==1.13.1

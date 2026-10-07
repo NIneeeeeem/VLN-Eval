@@ -1,0 +1,109 @@
+{
+  "schema_version": "nav-eval-plugin/1",
+  "kind": "benchmark",
+  "goal_kinds": [
+    "language"
+  ],
+  "id": "rxr_ce",
+  "version": "1",
+  "default_simulator": "habitat030",
+  "splits": [
+    "rxr_val_unseen"
+  ],
+  "defaults": {
+    "benchmark_id": "rxr_val_unseen",
+    "success_distance_m": 3,
+    "max_navigation_steps": 500,
+    "max_control_steps": null,
+    "enable_oracle": false
+  },
+  "settings": [
+    "benchmark_id",
+    "success_distance_m",
+    "max_navigation_steps",
+    "max_control_steps",
+    "enable_oracle",
+    "languages",
+    "simulator_version",
+    "allow_tilt"
+  ],
+  "observation": {
+    "width": 640,
+    "height": 480,
+    "hfov": 90
+  },
+  "bindings": {
+    "habitat024": {
+      "offers_sensors": ["pose"],
+      "action_requirements": {"camera_tilt": {"allow_tilt": true}},
+      "entrypoint": "extensions.benchmarks.vln.r2r_ce.bindings.habitat:create",
+      "accepts_actions": [
+        "primitive",
+        "stop",
+        "camera_tilt"
+      ],
+      "capture_schema": "habitat-r2r-evidence/1",
+      "provides_evidence": [
+        "trajectory.goal_distances_m",
+        "trajectory.positions_xyz_m",
+        "reference.geodesic_start_to_goal_m",
+        "reference.success_radius_m"
+      ],
+      "clock": "discrete_control_ticks",
+      "action_semantics": {
+        "forward_m": 0.25,
+        "turn_rad": 0.2617993877991494
+      },
+      "settings": {
+        "simulator_version": "0.2.4"
+      },
+      "supported_action_semantics": {
+        "turn_rad": [
+          0.2617993877991494,
+          0.5235987755982988
+        ]
+      }
+    },
+    "habitat030": {
+      "offers_sensors": ["pose"],
+      "action_requirements": {"camera_tilt": {"allow_tilt": true}},
+      "entrypoint": "extensions.benchmarks.vln.r2r_ce.bindings.habitat:create",
+      "accepts_actions": [
+        "primitive",
+        "stop",
+        "camera_tilt"
+      ],
+      "capture_schema": "habitat-r2r-evidence/1",
+      "provides_evidence": [
+        "trajectory.goal_distances_m",
+        "trajectory.positions_xyz_m",
+        "reference.geodesic_start_to_goal_m",
+        "reference.success_radius_m"
+      ],
+      "clock": "discrete_control_ticks",
+      "action_semantics": {
+        "forward_m": 0.25,
+        "turn_rad": 0.2617993877991494
+      },
+      "settings": {
+        "simulator_version": "0.3.0"
+      },
+      "supported_action_semantics": {
+        "turn_rad": [
+          0.2617993877991494,
+          0.5235987755982988
+        ]
+      }
+    }
+  },
+  "metrics": [
+    "r2r_ce_standard"
+  ],
+  "failure_policy": {
+    "policy_error": "diagnostic_only",
+    "infrastructure_error": "diagnostic_only"
+  },
+  "validation": {
+    "level": "unverified"
+  }
+}

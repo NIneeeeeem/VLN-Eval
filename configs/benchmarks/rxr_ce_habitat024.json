@@ -1,0 +1,5 @@
+{
+  "benchmark": "rxr_ce", "simulator": "habitat024",
+  "benchmark_settings": {"benchmark_id": "rxr_val_unseen"},
+  "environment": {"settings": {"data_root": "data"}}
+}

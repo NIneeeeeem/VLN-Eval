@@ -1,0 +1,24 @@
+# Installed into the repository's GOAT runtime by setup_benchmark.py.
+# @package _global_
+defaults:
+  - goat_stretch_hm3d
+  - override /habitat/simulator/agents@habitat.simulator.agents.main_agent: rgbd_agent
+  - _self_
+
+habitat:
+  dataset:
+    split: val_seen
+    data_path: data/datasets/goat_bench/hm3d/v1/val_seen/val_seen.json.gz
+    scenes_dir: data/scene_datasets
+  simulator:
+    agents:
+      main_agent:
+        sim_sensors:
+          depth_sensor:
+            position: [0, 1.31, 0]
+  task:
+    lab_sensors:
+      goat_goal_sensor:
+        object_cache: data/goat-assets/goal_cache/ovon/category_name_clip_embeddings.pkl
+        image_cache: data/goat-assets/goal_cache/iin/val_seen_embeddings/
+        language_cache: data/goat-assets/goal_cache/language_nav/val_seen_instruction_clip_embeddings.pkl

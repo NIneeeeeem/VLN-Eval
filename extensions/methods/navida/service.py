@@ -1,7 +1,7 @@
 """NaVIDA method service: Qwen2.5-VL next-action VLN policy.
 
-Wraps the upstream NaVIDA checkpoint (NaVIDA, arXiv 2601.18188; source checkout
-and weights are passed via the resource map) behind the nav-eval method contract.
+Wraps the NaVIDA checkpoint (NaVIDA, arXiv 2601.18188; weights are passed
+via the resource map) behind the nav-eval method contract using Transformers.
 
 Reference behavior: the prompt template, system prompt, RGB resize (308x252),
 uniformly-sampled 8-frame history, generation config (including checkpoint
@@ -15,7 +15,7 @@ import io
 import re
 import time
 
-from nav_eval.contracts import ContractError, SCHEMA_VERSION, validate_observation
+from nav_eval.contracts import SCHEMA_VERSION, ContractError, validate_observation
 from nav_eval.tensorcode import decode_tensor
 
 SYSTEM_PROMPT = "You are a helpful assistant."
@@ -96,12 +96,6 @@ class NaVIDAMethodService:
     def _ensure_model(self):
         if self.model is not None:
             return
-        import os
-
-        if not os.path.isdir(self.checkpoint):
-            raise ContractError(
-                f"NaVIDA checkpoint directory not found: {self.checkpoint}; "
-                "see data/README.md for the local result/ checkpoints")
         import torch
         from transformers import GenerationConfig, Qwen2_5_VLForConditionalGeneration
 

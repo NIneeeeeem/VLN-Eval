@@ -1,0 +1,41 @@
+{
+  "source": "https://github.com/InternRobotics/StreamVLN",
+  "revision": "e48f6ff7e9201d93aae003e8f64b04c00cec13bc",
+  "license_note": "See notices/ and retained source headers; the Nav-Eval root license does not override upstream terms. StreamVLN README declares CC BY-NC-SA 4.0.",
+  "modifications": "Method namespace imports; lazy/inference-only package initialization; simulator-independent helpers. See local diff for asset path and inference boundary changes.",
+  "source_sha256": {
+    "streamvln/utils/utils.py": "c60daa7b8233012048e2452871f446a5dc3c705257ad6ae05aa24d6b2c36b90d",
+    "streamvln/model/stream_video_vln.py": "e106e16a7de4a8086ed526e55d877506e480d05980ddf1c6909286439acca8dc",
+    "llava/model/llava_arch.py": "ce3d69fbcd69fcb0d056d419a1b6760237a209f1fc09584174bb10e54b9ff3af",
+    "llava/utils.py": "445e5aaf447e58157532d1517cf2efb7eef91c5f84db5a9dc07cc39a7f5bef11",
+    "llava/constants.py": "2c5a8a659b3c5c1c70360808ae901511db67da8fbe331e1329cd754f6f3a0879",
+    "llava/__init__.py": "52508db720555fae39081e92e8b7f26244df4153b5f3f6bc7bd4a647b7071310",
+    "llava/mm_utils.py": "e9920f39cd9dd9d5c11b8f9302752ad937679dc53ab3a18c894f1a6c0afcaa2f",
+    "llava/model/multimodal_projector/builder.py": "b0e019aa3f2031b028d6d35b71ef40e16b4b9566c26ad5947dceba1d53777964",
+    "llava/model/multimodal_projector/pooler_projector.py": "5d9ed31673b3a3ac157f5ebcc5695503ed3e01c44214a42db80a96f8184235ee",
+    "llava/model/__init__.py": "16714be8b5e852887466b048d2bde886ff37f9cbbc701cd0565822a5e9507d5c",
+    "llava/model/multimodal_resampler/builder.py": "2e82104348574effc7d2b65c502f439653e4b78bd62815c34a5e77dc7c7a3a5f",
+    "llava/model/multimodal_resampler/qformer.py": "bca4dbbc24bb2914abdf6b8620a6431b95e7842c2acde7efbd6ef325544bc85d",
+    "llava/model/multimodal_resampler/perceiver.py": "ff6ea8388648ff0d38fc8e5c80dc8c5f53c1ccc55048acc7aa85a5081ebff7eb",
+    "llava/model/multimodal_resampler/spatial_pool.py": "12bccc0f04472b6fd7e92498f112c985e399c28b872ee10822d8b1d9556a3518",
+    "llava/model/multimodal_resampler/masked_drop.py": "3f9afbe809b8c08528d36f603d9bbd0039615ec01e1e94053abb91a38c059d27",
+    "llava/model/multimodal_encoder/builder.py": "7c436d20f34b0c05b09150234896f6cb193eb453a4850552eb4569b93990d127",
+    "llava/model/multimodal_encoder/mlcd_encoder.py": "3adbd3d8d8ded88f7e262da516fe033f8f497038eca3cf91c82ad910941d72e9",
+    "llava/model/multimodal_encoder/mlcd/vit_rope2d_hf.py": "8c302e6df017d9c7829aac3b33f6d74bfef1d8c80f9c7e068bf1a04e7ff24370",
+    "llava/model/multimodal_encoder/clip_encoder.py": "1ca15402531773b2f81acc6bbc54078e72b48805903f41960bc23d08310c5fd5",
+    "llava/model/multimodal_encoder/siglip_encoder.py": "09b0e16ed6f0281d86f39fb2ad1c938cb684d8df5272f8b952c3f9e41156cfc3",
+    "llava/model/multimodal_encoder/hf_vision.py": "edfc49ff0049d957ab957e00da241a28c2a8bc5a687e1552c53cc6d54c849681",
+    "llava/model/multimodal_encoder/open_clip_encoder.py": "1a8889ad1af75db5567b14aafd790d394e815cbbc9d30d0bb561523a325163a0",
+    "llava/model/multimodal_encoder/imagebind.py": "6a6545354fbce32299f9e2ef180df5d758fdee77504b281d9fb1263fe2ba6452",
+    "llava/model/language_model/llava_qwen.py": "f55015d1b7f618462bea4f902004a8a3f9ac1e41c2e8d4dfa9b73fb1fb0c1cba"
+  },
+  "shared_code": {
+    "load_image_from_base64": "extensions.methods.shared.image_io",
+    "get_model_name_from_path": "extensions.methods.shared.image_io",
+    "expand2square": "extensions.methods.shared.llava_next.image",
+    "select_best_resolution": "extensions.methods.shared.llava_next.image",
+    "resize_and_pad_image": "extensions.methods.shared.llava_next.image",
+    "divide_to_patches": "extensions.methods.shared.llava_next.image",
+    "get_anyres_image_grid_shape": "extensions.methods.shared.llava_next.image"
+  }
+}

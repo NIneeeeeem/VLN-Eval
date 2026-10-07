@@ -1,0 +1,5 @@
+{
+  "benchmark": "objectnav", "simulator": "habitat024",
+  "benchmark_settings": {"benchmark_id": "objectnav_mp3d_val"},
+  "environment": {"settings": {"data_root": "data"}}
+}

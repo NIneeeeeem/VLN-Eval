@@ -1,0 +1,26 @@
+# Shared inference dependencies for NaVid, Uni-NaVid, NaVILA, AwareVLN,
+# JanusVLN, InternVLA-N1, OneVLA, NaVIDA and ActiveVLN. Python 3.10.
+# Legacy model-specific recipes are alternatives, not additions to this group.
+transformers==4.57.0
+accelerate==0.34.2
+numpy==1.26.4
+Pillow==11.3.0
+timm==0.9.12
+einops==0.6.1
+einops-exts==0.0.4
+sentencepiece==0.1.99
+# Released NaVid/Uni-NaVid tokenizers use legacy=false with SentencePiece 0.1.99.
+protobuf==3.20.3
+peft==0.17.1
+qwen-vl-utils==0.0.14
+diffusers==0.39.0
+scipy==1.15.3
+omegaconf==2.3.1
+decord==0.6.0
+loguru==0.7.3
+opencv-python==4.11.0.86
+depth-camera-filtering @ https://codeload.github.com/naokiyokoyama/depth_camera_filtering/zip/39d6e2f391c8b2198a67ad96f94bf6da0acd48a0
+s2wrapper @ https://codeload.github.com/bfshi/scaling_on_scales/zip/9c008a37540e761f53574b488979db6e49a64312
+rich
+requests
+tqdm

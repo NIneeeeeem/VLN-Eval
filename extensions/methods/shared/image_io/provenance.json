@@ -1,0 +1,50 @@
+{
+  "implementation_origin": "awarevln",
+  "modifications": "Selected function bodies relocated unchanged; old method modules re-export them.",
+  "origins": [
+    {
+      "method": "awarevln",
+      "source": "https://github.com/GWxuan/AwareVLN",
+      "revision": "8f14eb8450cdd14ff4e3ba1ea04824255121e6be",
+      "license_note": "See notices/ and retained source headers; the Nav-Eval root license does not override upstream terms.",
+      "original_file": "llava/mm_utils.py",
+      "function_sha256": {
+        "load_image_from_base64": "976cb2fd6c308235ef0908ef87e5afb28769db1b5e97637d12cdfa45038619bb",
+        "get_model_name_from_path": "d9822b44f23b1c2ff26fdd7286fd90a228c78de79215c510896914236c82c510"
+      }
+    },
+    {
+      "method": "navila",
+      "source": "https://github.com/AnjieCheng/NaVILA",
+      "revision": "76b98f233dd0fff05dfcd69435eec6740febff9d",
+      "license_note": "See notices/ and retained source headers; the Nav-Eval root license does not override upstream terms.",
+      "original_file": "llava/mm_utils.py",
+      "function_sha256": {
+        "load_image_from_base64": "976cb2fd6c308235ef0908ef87e5afb28769db1b5e97637d12cdfa45038619bb",
+        "get_model_name_from_path": "d9822b44f23b1c2ff26fdd7286fd90a228c78de79215c510896914236c82c510"
+      }
+    },
+    {
+      "method": "gavln",
+      "source": "https://ghproxy.net/https://github.com/jahhaoyang/GA-VLN",
+      "revision": "cc6086b7081a346695abecf6821f827e2db44a43",
+      "license_note": "See notices/ and retained source headers; the Nav-Eval root license does not override upstream terms. No top-level license grant was found in this revision; do not assume permissive redistribution.",
+      "original_file": "llava/mm_utils.py",
+      "function_sha256": {
+        "load_image_from_base64": "976cb2fd6c308235ef0908ef87e5afb28769db1b5e97637d12cdfa45038619bb",
+        "get_model_name_from_path": "d9822b44f23b1c2ff26fdd7286fd90a228c78de79215c510896914236c82c510"
+      }
+    },
+    {
+      "method": "streamvln",
+      "source": "https://github.com/InternRobotics/StreamVLN",
+      "revision": "e48f6ff7e9201d93aae003e8f64b04c00cec13bc",
+      "license_note": "See notices/ and retained source headers; the Nav-Eval root license does not override upstream terms. StreamVLN README declares CC BY-NC-SA 4.0.",
+      "original_file": "llava/mm_utils.py",
+      "function_sha256": {
+        "load_image_from_base64": "976cb2fd6c308235ef0908ef87e5afb28769db1b5e97637d12cdfa45038619bb",
+        "get_model_name_from_path": "d9822b44f23b1c2ff26fdd7286fd90a228c78de79215c510896914236c82c510"
+      }
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "schema_version": "nav-eval-experiment/1",
+  "benchmark": "vlnverse",
+  "simulator": "isaacsim500",
+  "method": "streamvln",
+  "track": "standardized",
+  "launcher": "python",
+  "transport": "binary",
+  "episodes": ["kujiale_0020_0_0"],
+  "episode_limit": 1,
+  "benchmark_settings": {
+    "benchmark_id": "vlnverse_fine_val_unseen",
+    "max_control_steps": 4,
+    "max_task_steps": 25000
+  },
+  "seed": 0,
+  "claim": "diagnostic"
+}

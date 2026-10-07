@@ -4,7 +4,7 @@ import json
 import struct
 
 from nav_eval.contracts import ContractError
-from nav_eval.tensorcode import validate_tensor
+from nav_eval.tensorcode import tensor_nbytes, validate_tensor
 
 CONTENT_TYPE = "application/vnd.nav-eval.tensor-stream"
 MAX_BINARY_BYTES = 64 * 1024 * 1024
@@ -40,8 +40,13 @@ def decode(body):
     size = struct.unpack("!I", body[:4])[0]
     if size > len(body) - 4:
         raise ContractError("truncated binary header")
-    header = json.loads(body[4:4 + size])
-    if set(header) != {"value", "lengths"} or not isinstance(header["lengths"], list):
+    def reject_constant(value):
+        raise ContractError(f"invalid JSON number: {value}")
+    try:
+        header = json.loads(body[4:4 + size], parse_constant=reject_constant)
+    except (ValueError, UnicodeError) as error:
+        raise ContractError("invalid binary JSON header") from error
+    if not isinstance(header, dict) or set(header) != {"value", "lengths"} or not isinstance(header["lengths"], list):
         raise ContractError("invalid binary header")
     offset, buffers = 4 + size, []
     for length in header["lengths"]:
@@ -62,8 +67,9 @@ def decode(body):
                     raise ContractError("invalid binary buffer index")
                 used.add(index)
                 payload = {k: v for k, v in item.items() if k != "__nav_buffer__"}
+                if len(buffers[index]) != tensor_nbytes(payload):
+                    raise ContractError("tensor buffer length does not match shape and dtype")
                 payload["tensor_b64"] = base64.b64encode(buffers[index]).decode("ascii")
-                validate_tensor(payload)
                 return payload
             return {k: visit(v) for k, v in item.items()}
         if isinstance(item, list):

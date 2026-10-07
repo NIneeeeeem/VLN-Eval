@@ -1,0 +1,4 @@
+# InternVLA-N1; model and depth resize helpers are bundled.
+-r janusvln-inference.txt
+diffusers==0.32.2
+depth-camera-filtering @ https://codeload.github.com/naokiyokoyama/depth_camera_filtering/zip/39d6e2f391c8b2198a67ad96f94bf6da0acd48a0

@@ -1,0 +1,9 @@
+gavln
+https://ghproxy.net/https://github.com/jahhaoyang/GA-VLN
+cc6086b7081a346695abecf6821f827e2db44a43
+See notices/ and retained source headers; the Nav-Eval root license does not override upstream terms. No top-level license grant was found in this revision; do not assume permissive redistribution.
+
+streamvln
+https://github.com/InternRobotics/StreamVLN
+e48f6ff7e9201d93aae003e8f64b04c00cec13bc
+See notices/ and retained source headers; the Nav-Eval root license does not override upstream terms. StreamVLN README declares CC BY-NC-SA 4.0.

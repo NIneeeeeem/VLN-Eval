@@ -4,14 +4,23 @@
   "id": "streamvln",
   "version": "1",
   "entrypoint": "extensions.methods.streamvln.adapter:create",
-  "settings": ["preprocess_mode", "tokenizer_mode"],
-  "defaults": {"preprocess_mode": "lazy", "tokenizer_mode": "reuse"},
+  "settings": [
+    "preprocess_mode",
+    "tokenizer_mode"
+  ],
+  "defaults": {
+    "preprocess_mode": "lazy",
+    "tokenizer_mode": "reuse"
+  },
   "observation": {
     "width": 640,
     "height": 480,
     "hfov": 79
   },
   "capabilities": {
+    "accepts_goals": [
+      "language"
+    ],
     "requires_sensors": [
       "rgb"
     ],
@@ -27,11 +36,14 @@
   "requires": {
     "gpu": true,
     "paths": [
-      "checkpoint",
-      "repo_path"
+      "checkpoint"
     ]
   },
   "validation": {
     "level": "unverified"
-  }
+  },
+  "code_dependencies": [
+    "../shared/image_io",
+    "../shared/llava_next"
+  ]
 }

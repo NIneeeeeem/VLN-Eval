@@ -1,0 +1,15 @@
+{
+  "benchmark": "hm3d_ovon",
+  "simulator": "habitat030",
+  "benchmark_settings": {
+    "repo_root": "extensions/benchmarks/objectnav/hm3d_ovon/runtime",
+    "task_config": "nav_eval_ovon-habitat030.yaml",
+    "camera_tilt": false,
+    "dataset_path": "data/datasets/ovon/hm3d/v1/val_seen/val_seen.json.gz",
+    "asset_paths": ["ovon", "config", "data/scene_datasets"]
+  },
+  "environment": {"settings": {"data_root": "data"},
+    "cwd": "extensions/benchmarks/objectnav/hm3d_ovon/runtime",
+    "pythonpath": ["extensions/benchmarks/objectnav/hm3d_ovon/runtime"]
+  }
+}

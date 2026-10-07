@@ -6,5 +6,4 @@ def create(config):
     settings = config["settings"]
     return NaVILAMethodService(
         checkpoint=settings["checkpoint"],
-        repo_path=settings["repo_path"],
     )

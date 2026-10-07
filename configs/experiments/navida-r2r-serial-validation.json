@@ -1,8 +1,0 @@
-{
-  "schema_version": "nav-eval-experiment/1",
-  "benchmark": "r2r_ce", "simulator": "habitat030", "method": "navida",
-  "track": "native", "launcher": "python", "transport": "binary",
-  "benchmark_settings": {"benchmark_id": "r2r_val_unseen"},
-  "episodes": ["1", "2", "3", "4"],
-  "seed": 0, "claim": "diagnostic"
-}
